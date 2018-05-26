@@ -46,17 +46,46 @@ public class Ref : MonoBehaviour {
             Debug.Log(repAttr.Mode.ToString());
         }
 
-        tubes = new TubeData[objCount];
-        tubeUpdateData = new NativeArray<TubeUpdateData>(objCount, Allocator.Persistent);
-        endStates = new NativeArray<byte>(objCount, Allocator.Persistent);
-        tempOps = new NativeArray<byte>(objCount, Allocator.Persistent);
-        for (int i = 0; i < objCount; ++i)
+        tubes = new TubeData[arrayLength];
+        tubeUpdateData = new NativeArray<TubeUpdateData>(arrayLength, Allocator.Persistent);
+        endStates = new NativeArray<byte>(arrayLength, Allocator.Persistent);
+        tempOps = new NativeArray<byte>(arrayLength, Allocator.Persistent);
+        for (int i = 0; i < arrayLength; ++i)
         {
             tubes[i].init(10.0f, 2.0f);
             tubes[i].idxInUpdateArray = i;
             tubes[i].push();
             endStates[i] = 0;
         }
+    }
+    public void addTube(float _length, float _speed)
+    {
+        if(tubeCount >= arrayLength)
+        {
+            Debug.Log("max tube exceeded!");
+            return;
+        }
+        tubes[tubeCount].init(_length, _speed);
+        tubes[tubeCount].idxInUpdateArray = tubeCount;
+        endStates[tubeCount] = 0;
+
+        tubeCount++;
+    }
+    
+    public int addGenerator()
+    {
+        int ret = generatorCount;
+        generators[generatorCount].init(1, 2f, 9999, generatorCount);
+        generatorCount++;
+        return ret;
+    }
+    public void addConverter()
+    {
+
+    }
+    public void addConsumer()
+    {
+
     }
     private void OnDestroy()
     {
@@ -65,13 +94,66 @@ public class Ref : MonoBehaviour {
         tubeUpdateData.Dispose();
     }
     public static Ref self;
-    public int objCount = 10000;
+    public int arrayLength = 10000;
+    int tubeCount;
     TubeData[] tubes;
     public NativeArray<TubeUpdateData> tubeUpdateData;
-    TubeUpdateJob updateJob;
-    JobHandle updateJH;
+    TubeUpdateJob updateTubesJob;
+    JobHandle updateTubesJH;
     public NativeArray<byte> endStates;
     public NativeArray<byte> tempOps;
+
+    GeneratorData[] generators;
+    int generatorCount;
+    GeneratorUpdateJob generalUpdateJob;
+    JobHandle generalUpdateJH;
+    int generalUpdateCount;
+    public NativeArray<GeneralUpdateData> generalUpdateData;
+    public NativeArray<byte> tempGeneralUpdateOps;
+    void initGenerators()
+    {
+        generators = new GeneratorData[arrayLength];
+        generalUpdateData = new NativeArray<GeneralUpdateData>(arrayLength, Allocator.Persistent);
+        tempGeneralUpdateOps = new NativeArray<byte>(arrayLength, Allocator.Persistent);
+    }
+    void updateGeneralUpdate()
+    {
+        generalUpdateJob = new GeneratorUpdateJob()
+        {
+            deltaTime = Time.deltaTime,
+            dataArray = generalUpdateData,
+            outputOps = tempOps,
+        };
+#if DEBUG_JOB
+        generalUpdateJob.Run(objCount);
+#else
+        generalUpdateJH = generalUpdateJob.Schedule(generalUpdateCount, 64);
+#endif
+    }
+    void lateUpdateGeneralUpdate()
+    {
+#if DEBUG_JOB
+#else
+        generalUpdateJH.Complete();
+#endif
+        for (int i = 0; i < generalUpdateCount; ++i)
+        {
+            int op = generalUpdateJob.outputOps[i];
+            if (op != 0)
+            {
+                byte state = endStates[i];
+                if (state == 0)
+                {
+                    // the end point is empty, let the tube remove this element and assign a new one.
+                    generators[i].onExpended();
+                }
+                else if (state == 1)
+                {
+                    // this element is blocked, let the tube update the element before this.
+                }
+            }
+        }
+    }
     // Update is called once per frame
     float elapsedTime;
     bool pushed;
@@ -84,7 +166,7 @@ public class Ref : MonoBehaviour {
         if (addnew)
         {
             addnew = false;
-            for (int i = 0; i < objCount; ++i)
+            for (int i = 0; i < arrayLength; ++i)
             {
                 tubes[i].push();
             }
@@ -93,12 +175,12 @@ public class Ref : MonoBehaviour {
         if(elapsedTime > 2.0f && pushed == false)
         {
             pushed = true;
-            for (int i = 0; i < objCount; ++i)
+            for (int i = 0; i < arrayLength; ++i)
             {
                 tubes[i].push();
             }
         }
-        updateJob = new TubeUpdateJob()
+        updateTubesJob = new TubeUpdateJob()
         {
             deltaTime = Time.deltaTime,
             dataArray = tubeUpdateData,
@@ -107,7 +189,7 @@ public class Ref : MonoBehaviour {
 #if DEBUG_JOB
         updateJob.Run(objCount);
 #else
-        updateJH = updateJob.Schedule(objCount, 64);
+        updateTubesJH = updateTubesJob.Schedule(arrayLength, 64);
 #endif
     }
 
@@ -115,28 +197,14 @@ public class Ref : MonoBehaviour {
     {
 #if DEBUG_JOB
 #else
-        updateJH.Complete();
+        updateTubesJH.Complete();
 #endif
-
-
-        for (int i = 0; i < objCount; ++i)
+        for (int i = 0; i < arrayLength; ++i)
         {
-            int op = updateJob.outputOps[i];
+            int op = updateTubesJob.outputOps[i];
             if (op != 0)
             {
                 byte state = endStates[i];
-                //if (endStates[index] == 0)
-                //{
-                //    // the end point is empty, let the tube remove this element and assign a new one.
-                //    op = 1;
-
-                //}
-                //else if (endStates[index] == 1)
-                //{
-                //    // this element is blocked, let the tube update the element before this.
-                //    op = 2;
-                //}
-
                 if (state == 0)
                 {
                     // the end point is empty, let the tube remove this element and assign a new one.
@@ -150,7 +218,7 @@ public class Ref : MonoBehaviour {
             }
         }
         // debug
-        for (int j = 0; j < objCount; ++j)
+        for (int j = 0; j < arrayLength; ++j)
         {
             TubeData d = tubes[j];
             float offset = d.getOffset();
@@ -180,6 +248,7 @@ public class Ref : MonoBehaviour {
             else
             {
                 endStates[0] = 0;
+                tubes[0].onUnblocked();
             }
         }
         dbgArray = tubes[0].positions;
@@ -188,33 +257,7 @@ public class Ref : MonoBehaviour {
     public bool toggleEndState;
     public int endState0;
     
-    struct TubeUpdateJob : IJobParallelFor
-    {
-        [ReadOnly]
-        public float deltaTime;
-        //[ReadOnly]
-        //public NativeArray<byte> endStates;
-        [WriteOnly]
-        public NativeArray<byte> outputOps;
-        public NativeArray<TubeUpdateData> dataArray;
-
-        public void Execute(int index)
-        {
-            TubeUpdateData thisData = dataArray[index];
-            byte op = 0;
-            if (thisData.speed > 0.0f)
-            {
-                float movedDist = deltaTime * thisData.speed;
-                thisData.current += movedDist;
-                dataArray[index] = thisData;
-                if (thisData.current >= thisData.boundary)
-                {
-                    op = 1;
-                }
-            }
-            outputOps[index] = op;
-        }
-    }
+    
 }
 public struct TubeUpdateData
 {
@@ -226,5 +269,57 @@ public struct TubeUpdateData
         speed = _speed;
         boundary = 0.0f;
         current = 0.0f;
+    }
+}
+public struct TubeUpdateJob : IJobParallelFor
+{
+    [ReadOnly]
+    public float deltaTime;
+    [WriteOnly]
+    public NativeArray<byte> outputOps;
+    public NativeArray<TubeUpdateData> dataArray;
+
+    public void Execute(int index)
+    {
+        TubeUpdateData thisData = dataArray[index];
+        byte op = 0;
+        if (thisData.speed > 0.0f)
+        {
+            float movedDist = deltaTime * thisData.speed;
+            thisData.current += movedDist;
+            dataArray[index] = thisData;
+            op = (thisData.current >= thisData.boundary) ? (byte)1 : (byte)0;
+        }
+        outputOps[index] = op;
+    }
+}
+public struct GeneralUpdateData
+{
+    //public float speed;
+    public float timeLeft; // the absolute position of the element being updated along the tube. ranges from 0 to length of TubeData.
+}
+public struct GeneratorUpdateJob : IJobParallelFor
+{
+    [ReadOnly]
+    public float deltaTime;
+    [WriteOnly]
+    public NativeArray<byte> outputOps;
+    public NativeArray<GeneralUpdateData> dataArray;
+
+    public void Execute(int index)
+    {
+        GeneralUpdateData thisData = dataArray[index];
+        if (thisData.timeLeft < 0.0f)
+        {
+            outputOps[index] = 0;
+        }
+        else
+        {
+            //thisData.timeLeft -= deltaTime * thisData.speed;
+            thisData.timeLeft -= deltaTime;
+
+            dataArray[index] = thisData;
+            outputOps[index] = (thisData.timeLeft <= 0.0f) ? (byte)1 : (byte)0;
+        }
     }
 }

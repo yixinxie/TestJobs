@@ -45,9 +45,9 @@
         {
             TubeUpdateData d = Ref.self.tubeUpdateData[idxInUpdateArray];
 
-            if (positions[0] + d.current - itemHalfWidth >= 0.0f)
+            if (positions[0] + d.current - itemHalfWidth * 2f >= 0.0f)
             {
-                // refresh current distances.
+                // refresh distances upto currentIndex.
                 for (int i = 0; i <= currentIndex; ++i)
                 {
                     positions[i] += d.current;
@@ -76,6 +76,46 @@
             count++;
             transfer();
         }
+    }
+    // while previously in a blocked state, the last element just got unblocked.
+    public void onUnblocked()
+    {
+        if (currentIndex >= count - 1) return;
+        TubeUpdateData d = Ref.self.tubeUpdateData[idxInUpdateArray];
+        for (int i = 0; i <= currentIndex; ++i)
+        {
+            positions[i] += d.current;
+        }
+        currentIndex = count;
+        currentIndex -= 2;
+        count--;
+        transfer();
+    }
+    // take a random element from the list. not usable yet!
+    public void pick(float pickPos)
+    {
+        //float range = 0.25f;
+
+    }
+    // insert an element at random position. not usable yet!
+    public void insert(float insertPos)
+    {
+        TubeUpdateData d = Ref.self.tubeUpdateData[idxInUpdateArray];
+        float[] tmpPositions = new float[MaxElement];
+
+        for (int i = 0; i < count; ++i)
+        {
+            if(i <= currentIndex)
+            {
+                tmpPositions[i] = positions[i] + d.current;
+            }
+            else
+            {
+                tmpPositions[i] = positions[i];
+            }
+        }
+        //if(insertPos > itemHalfWidth && insertPos < tmpPositions[0] - )
+        tmpPositions = null;
     }
     
     private void transfer()
