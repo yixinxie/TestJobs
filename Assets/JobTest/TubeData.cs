@@ -9,7 +9,7 @@
     public int idxInUpdateArray; // index in tubeOutputUpdateData
     public float getOffset()
     {
-        TubeUpdateData d = Ref.self.tubeUpdateData[idxInUpdateArray];
+        TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
         return d.current;
     }
     public TubeData(float _length, float _speed)
@@ -33,17 +33,20 @@
         currentIndex = -1;
     }
 
-    //public bool hasSpace()
-    //{
-    //    return length > positions[end] - positions[start] + offset;
-    //}
+    public bool hasSpace() {
+        if (count == 0) return true;
+
+        TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
+
+        return positions[0] + d.current - itemHalfWidth * 2f >= 0.0f;
+    }
     public void push()
     {
         if(count >= MaxElement) return;
 
         if(count > 0)
         {
-            TubeUpdateData d = Ref.self.tubeUpdateData[idxInUpdateArray];
+            TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
 
             if (positions[0] + d.current - itemHalfWidth * 2f >= 0.0f)
             {
@@ -54,7 +57,7 @@
                 }
                 d.boundary -= d.current;
                 d.current = 0.0f;
-                Ref.self.tubeUpdateData[idxInUpdateArray] = d;
+                TubeSimulate.self.tubeUpdateData[idxInUpdateArray] = d;
 
                 for (int i = count; i > 0; --i)
                 {
@@ -81,7 +84,7 @@
     public void onUnblocked()
     {
         if (currentIndex >= count - 1) return;
-        TubeUpdateData d = Ref.self.tubeUpdateData[idxInUpdateArray];
+        TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
         for (int i = 0; i <= currentIndex; ++i)
         {
             positions[i] += d.current;
@@ -100,7 +103,7 @@
     // insert an element at random position. not usable yet!
     public void insert(float insertPos)
     {
-        TubeUpdateData d = Ref.self.tubeUpdateData[idxInUpdateArray];
+        TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
         float[] tmpPositions = new float[MaxElement];
 
         for (int i = 0; i < count; ++i)
@@ -120,7 +123,7 @@
     
     private void transfer()
     {
-        TubeUpdateData d = Ref.self.tubeUpdateData[idxInUpdateArray];
+        TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
         d.current = 0.0f;
         if (currentIndex >= 0)
         { 
@@ -139,12 +142,12 @@
             d.boundary = 0.0f;
             d.speed = 0.0f;
         }
-        Ref.self.tubeUpdateData[idxInUpdateArray] = d;
+        TubeSimulate.self.tubeUpdateData[idxInUpdateArray] = d;
     }
     // when an element can be removed.
     public void pop()
     {
-        TubeUpdateData d = Ref.self.tubeUpdateData[idxInUpdateArray];
+        TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
         for (int i = 0; i < currentIndex; ++i)
         {
             positions[i] += d.current;
@@ -160,7 +163,7 @@
     {
         if (currentIndex >= 0)
         {
-            TubeUpdateData d = Ref.self.tubeUpdateData[idxInUpdateArray];
+            TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
             for (int i = 0; i < currentIndex; ++i)
             {
                 positions[i] += d.current;

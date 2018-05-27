@@ -62,8 +62,10 @@
     <Compile Include="Assets\JobTest\ConsumerData.cs" />
     <Compile Include="Assets\JobTest\ConverterData.cs" />
     <Compile Include="Assets\JobTest\GeneratorData.cs" />
-    <Compile Include="Assets\JobTest\Ref.cs" />
+    <Compile Include="Assets\JobTest\GenericJob.cs" />
+    <Compile Include="Assets\JobTest\ReflectionAttr.cs" />
     <Compile Include="Assets\JobTest\TubeData.cs" />
+    <Compile Include="Assets\JobTest\TubeSimulate.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\ClientTest.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\ReplicatedProperties.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\ReplicatedProperties_PlayerController.cs" />
