@@ -79,6 +79,14 @@ public class Ref : MonoBehaviour {
         generatorCount++;
         return ret;
     }
+	int[] nodeIndices = new int[9999];
+	public void link(int idx, int val)
+	{
+        // assume we have unified all 3 types, tubes, generators and converters.
+        // we have one array to store the end states(output spot) of all entities.
+
+		nodeIndices[idx] = val;
+	}
     public void addConverter()
     {
 
@@ -295,8 +303,7 @@ public struct TubeUpdateJob : IJobParallelFor
 }
 public struct GeneralUpdateData
 {
-    //public float speed;
-    public float timeLeft; // the absolute position of the element being updated along the tube. ranges from 0 to length of TubeData.
+    public float timeLeft;
 }
 public struct GeneratorUpdateJob : IJobParallelFor
 {
