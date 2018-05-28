@@ -6,11 +6,7 @@ using System.Reflection;
 using System;
 using Unity.Jobs;
 using Unity.Collections;
-public struct CanTakeState {
-    public int idx;
-    public byte state;
-    public byte type;
-}
+
 public class GenericJob {
     public int arrayLength = 10000;
     GenericUpdateJob genericUpdateJob;
@@ -19,13 +15,13 @@ public class GenericJob {
     public NativeArray<GenericUpdateData> genericUpdateData;
     public NativeArray<byte> tempGenericUpdateOps;
     int count;
-    CanTakeState[] endStates;
+    //CanTakeState[] endStates;
     // Use this for initialization
     public GenericJob() {
         genericUpdateData = new NativeArray<GenericUpdateData>(arrayLength, Allocator.Persistent);
         tempGenericUpdateOps = new NativeArray<byte>(arrayLength, Allocator.Persistent);
         count = 0;
-        endStates = new CanTakeState[arrayLength];
+        //endStates = new CanTakeState[arrayLength];
     }
     public void Dispose()
     {
@@ -39,11 +35,11 @@ public class GenericJob {
         return ret;
     }
     
-    public void update() {
+    public void update(float deltaTime) {
 
         genericUpdateJob = new GenericUpdateJob()
         {
-            deltaTime = Time.deltaTime,
+            deltaTime = deltaTime,
             dataArray = genericUpdateData,
             outputOps = tempGenericUpdateOps,
         };
@@ -59,17 +55,17 @@ public class GenericJob {
 #else
         genericUpdateJH.Complete();
 #endif
-        for(int i = 0; i < tempGenericUpdateOps.Length; ++i) {
-            if(tempGenericUpdateOps[i] != 0) {
-                // check if this generator has space at its end?
-                if (TubeSimulate.self.tubeHasSpace(endStates[i].idx)) {
+        //for(int i = 0; i < tempGenericUpdateOps.Length; ++i) {
+        //    if(tempGenericUpdateOps[i] != 0) {
+        //        // check if this generator has space at its end?
+        //        if (TubeSimulate.self.tubeHasSpace(endStates[i].idx)) {
                     
-                    TubeSimulate.self.pushToTube(endStates[i].idx);
-                    // consume a unit of resource.
-                    TubeSimulate.self.op1Generator(i);
-                }
-            }
-        }
+        //            TubeSimulate.self.pushToTube(endStates[i].idx);
+        //            // consume a unit of resource.
+        //            TubeSimulate.self.op1Generator(i);
+        //        }
+        //    }
+        //}
     }
 }
 public struct GenericUpdateData {

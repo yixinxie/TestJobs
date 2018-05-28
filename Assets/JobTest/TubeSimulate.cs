@@ -2,21 +2,29 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Reflection;
-using System;
 using Unity.Jobs;
 using Unity.Collections;
-
+public struct CanTakeState {
+    public int idx;
+    public byte state;
+    public byte type;
+}
 public class TubeSimulate : MonoBehaviour {
+    [HideInInspector]
     public static TubeSimulate self;
+    [HideInInspector]
     public static GenericJob[] generic;
     public int arrayLength = 10000;
     int tubeCount;
     TubeData[] tubes;
+    [HideInInspector]
     public NativeArray<TubeUpdateData> tubeUpdateData;
     TubeUpdateJob updateTubesJob;
     JobHandle updateTubesJH;
-    public NativeArray<byte> endStates;
+    //public NativeArray<CanTakeState> endStates;
+    [HideInInspector]
+    public CanTakeState[] endStates;
+    [HideInInspector]
     public NativeArray<byte> tempOps;
 
     public int outputStateCount;
@@ -37,7 +45,8 @@ public class TubeSimulate : MonoBehaviour {
         
         tubes = new TubeData[arrayLength];
         tubeUpdateData = new NativeArray<TubeUpdateData>(arrayLength, Allocator.Persistent);
-        endStates = new NativeArray<byte>(arrayLength, Allocator.Persistent);
+        //endStates = new NativeArray<CanTakeState>(arrayLength, Allocator.Persistent);
+        endStates = new CanTakeState[arrayLength];
         tempOps = new NativeArray<byte>(arrayLength, Allocator.Persistent);
         gOutputStates = new NativeArray<byte>(arrayLength, Allocator.Persistent);
         outputStateCount = 0;
@@ -45,9 +54,14 @@ public class TubeSimulate : MonoBehaviour {
         {
             tubes[i].init(10.0f, 2.0f);
             tubes[i].idxInUpdateArray = i;
-            tubes[i].push();
-            endStates[i] = 0;
+            //tubes[i].push();
+            tubes[i].idxInStateArray = registerEndState();
+            endStates[i].state = 0;
+            if(i > 0) {
+                endStates[i - 1].idx = i;
+            }
         }
+        tubes[0].push();
     }
     public void op1Generator(int idx) {
         generators[idx].onExpended();
@@ -67,16 +81,20 @@ public class TubeSimulate : MonoBehaviour {
         }
         tubes[tubeCount].init(_length, _speed);
         tubes[tubeCount].idxInUpdateArray = tubeCount;
-        endStates[tubeCount] = 0;
-
+        //endStates[tubeCount].state = 0;
         tubeCount++;
     }
     
     public int addGenerator()
     {
         int ret = generatorCount;
-        generators[generatorCount].init(1, 2f, 9999, generatorCount, outputStateCount);
+        generators[generatorCount].init(1, 2f, 9999, generatorCount, registerEndState());
         generatorCount++;
+        outputStateCount++;
+        return ret;
+    }
+    public int registerEndState() {
+        int ret = outputStateCount;
         outputStateCount++;
         return ret;
     }
@@ -99,7 +117,7 @@ public class TubeSimulate : MonoBehaviour {
     {
         gOutputStates.Dispose();
         tempOps.Dispose();
-        endStates.Dispose();
+        //endStates.Dispose();
         tubeUpdateData.Dispose();
         generic[0].Dispose();
         generic[1].Dispose();
@@ -126,13 +144,16 @@ public class TubeSimulate : MonoBehaviour {
                 tubes[i].push();
             }
         }
-        elapsedTime += Time.deltaTime;
-        if(elapsedTime > 2.0f && pushed == false)
+        float deltaTime = Time.deltaTime;
+        elapsedTime += deltaTime;
+        generic[0].update(deltaTime);
+        generic[1].update(deltaTime);
+        if (elapsedTime > 2.0f && pushed == false)
         {
             pushed = true;
-            for (int i = 0; i < arrayLength; ++i)
+            //for (int i = 0; i < arrayLength; ++i)
             {
-                tubes[i].push();
+                //tubes[i].push();
             }
         }
         updateTubesJob = new TubeUpdateJob()
@@ -141,8 +162,10 @@ public class TubeSimulate : MonoBehaviour {
             dataArray = tubeUpdateData,
             outputOps = tempOps,
         };
+        
 #if DEBUG_JOB
         updateJob.Run(objCount);
+        gener
 #else
         updateTubesJH = updateTubesJob.Schedule(arrayLength, 64);
 #endif
@@ -150,6 +173,20 @@ public class TubeSimulate : MonoBehaviour {
 
     private void LateUpdate()
     {
+        generic[0].lateUpdate();
+        for (int i = 0; i < generic[0].tempGenericUpdateOps.Length; ++i) {
+            if (generic[0].tempGenericUpdateOps[i] != 0) {
+                // check if this generator has space at its end?
+                if (tubeHasSpace(endStates[i].idx)) {
+
+                    pushToTube(endStates[i].idx);
+                    // consume a unit of resource.
+                    self.op1Generator(i);
+                }
+            }
+        }
+
+        generic[1].lateUpdate();
 #if DEBUG_JOB
 #else
         updateTubesJH.Complete();
@@ -159,11 +196,14 @@ public class TubeSimulate : MonoBehaviour {
             int op = updateTubesJob.outputOps[i];
             if (op != 0)
             {
-                byte state = endStates[i];
+                CanTakeState cts = endStates[tubes[i].idxInStateArray];
+                
+                byte state = cts.state;
                 if (state == 0)
                 {
                     // the end point is empty, let the tube remove this element and assign a new one.
                     tubes[i].pop();
+                    tubes[cts.idx].push();
                 }
                 else if (state == 1)
                 {
@@ -172,6 +212,7 @@ public class TubeSimulate : MonoBehaviour {
                 }
             }
         }
+
         // debug
         for (int j = 0; j < arrayLength; ++j)
         {
@@ -192,20 +233,20 @@ public class TubeSimulate : MonoBehaviour {
         currentIndex0 = tubes[0].currentIndex;
         count0 = tubes[0].count;
 
-        endState0 = (int)endStates[0];
-        if (toggleEndState)
-        {
-            toggleEndState = false;
-            if(endState0 == 0)
-            {
-                endStates[0] = 1;
-            }
-            else
-            {
-                endStates[0] = 0;
-                tubes[0].onUnblocked();
-            }
-        }
+        //endState0 = (int)endStates[0];
+        //if (toggleEndState)
+        //{
+        //    toggleEndState = false;
+        //    if(endState0 == 0)
+        //    {
+        //        endStates[0] = 1;
+        //    }
+        //    else
+        //    {
+        //        endStates[0] = 0;
+        //        tubes[0].onUnblocked();
+        //    }
+        //}
         dbgArray = tubes[0].positions;
     }
     public float[] dbgArray;

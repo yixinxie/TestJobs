@@ -7,6 +7,7 @@
     public float itemHalfWidth;
     public short count, currentIndex;
     public int idxInUpdateArray; // index in tubeOutputUpdateData
+    public int idxInStateArray; // index of the end state.
     public float getOffset()
     {
         TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
@@ -21,6 +22,7 @@
         count = 0;
         idxInUpdateArray = -1;
         currentIndex = -1;
+        idxInStateArray = -1;
     }
     public void init(float _length, float _speed)
     {
