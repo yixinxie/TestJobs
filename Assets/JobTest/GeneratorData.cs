@@ -10,7 +10,7 @@
         remaining = _remaining;
         timeToMakeOne = _speed;
         itemId = _itemId;
-        idxInUpdateArray = idx;
+        idxInUpdateArray = TubeSimulate.generic[0].addEntity();
         idxInOutputStateArray = outputIdx;
     }
 

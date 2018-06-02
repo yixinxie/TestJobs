@@ -8,7 +8,7 @@ using UnityEngine.Profiling;
 
 public struct CanTakeState {
     public int idx;
-    public byte state;
+    public byte cachedState;
     public byte type;
 }
 public class TubeSimulate : MonoBehaviour {
@@ -23,17 +23,15 @@ public class TubeSimulate : MonoBehaviour {
     public NativeArray<TubeUpdateData> tubeUpdateData;
     TubeUpdateJob updateTubesJob;
     JobHandle updateTubesJH;
-    //public NativeArray<CanTakeState> endStates;
     [HideInInspector]
     public CanTakeState[] endStates;
     [HideInInspector]
     public NativeArray<byte> tempOps;
 
     public int outputStateCount;
-    public NativeArray<byte> gOutputStates;
+    //public NativeArray<byte> gOutputStates;
 
-    int generatorCount;
-    GeneratorData[] generators;
+    List<GeneratorData> generators;
     
     private void Awake()
     {
@@ -51,29 +49,52 @@ public class TubeSimulate : MonoBehaviour {
         //endStates = new NativeArray<CanTakeState>(arrayLength, Allocator.Persistent);
         endStates = new CanTakeState[arrayLength];
         tempOps = new NativeArray<byte>(arrayLength, Allocator.Persistent);
-        gOutputStates = new NativeArray<byte>(arrayLength, Allocator.Persistent);
+        //gOutputStates = new NativeArray<byte>(arrayLength, Allocator.Persistent);
         outputStateCount = 0;
+
+        generators = new List<GeneratorData>();
+        addGenerator();
         for (int i = 0; i < arrayLength; ++i)
         {
             tubes[i].init(10.0f, 2.0f);
             tubes[i].idxInUpdateArray = i;
             //tubes[i].push();
             tubes[i].idxInStateArray = registerEndState();
-            endStates[i].state = 0;
-            if(i > 0) {
-                endStates[i - 1].idx = i;
+            endStates[i].cachedState = 0;
+            if(i == 0)
+            {
+                linkTubeToGenerator(0, i);
+            }
+            else
+            {
+                linkTubeToTube(i - 1, i);
             }
         }
-        tubes[0].push();
+        
+        //tubes[0].push();
     }
-    public void op1Generator(int idx) {
-        generators[idx].onExpended();
+    void linkTubeToGenerator(int generatorIdx, int tubeIdx) // generator ==> tube
+    {
+        GeneratorData genData = generators[generatorIdx];
+        CanTakeState cts = endStates[genData.idxInOutputStateArray];
+        cts.type = 0;
+        cts.idx = tubeIdx;
+        endStates[genData.idxInOutputStateArray] = cts;
     }
+
+    void linkTubeToTube(int tubeIdxPre, int tube1IdxSucc) // tube ==> tube
+    {
+        TubeData tubeData = tubes[tubeIdxPre];
+        CanTakeState cts = endStates[tubeData.idxInStateArray];
+        cts.type = 0;
+        cts.idx = tube1IdxSucc;
+        endStates[tubeData.idxInStateArray] = cts;
+    }
+    // tube to converter
+    // consumer to tube
+
     public void pushToTube(int idx) {
         tubes[idx].push();
-    }
-    public bool tubeHasSpace(int idx) {
-        return tubes[idx].hasSpace();
     }
     public void addTube(float _length, float _speed)
     {
@@ -84,16 +105,18 @@ public class TubeSimulate : MonoBehaviour {
         }
         tubes[tubeCount].init(_length, _speed);
         tubes[tubeCount].idxInUpdateArray = tubeCount;
-        //endStates[tubeCount].state = 0;
         tubeCount++;
     }
     
     public int addGenerator()
     {
-        int ret = generatorCount;
-        generators[generatorCount].init(1, 2f, 9999, generatorCount, registerEndState());
-        generatorCount++;
-        outputStateCount++;
+        // when we create a new generator, it should claim a space in the endStates array as indicated by the index 'generators[i].idxInOutputStateArray'.
+        int ret = generators.Count;
+        generators.Add(new GeneratorData());
+        GeneratorData gen = generators[ret];
+        gen.init(1, 2f, 3, ret, registerEndState());
+        gen.start();
+        generators[ret] = gen;
         return ret;
     }
     public int registerEndState() {
@@ -101,13 +124,6 @@ public class TubeSimulate : MonoBehaviour {
         outputStateCount++;
         return ret;
     }
-	public void link(int idx, int val)
-	{
-        // assume we have unified all 3 types, tubes, generators and converters.
-        // we have one array to store the end states(output spot) of all entities.
-
-
-	}
     public void addConverter()
     {
 
@@ -118,17 +134,12 @@ public class TubeSimulate : MonoBehaviour {
     }
     private void OnDestroy()
     {
-        gOutputStates.Dispose();
+        //gOutputStates.Dispose();
         tempOps.Dispose();
         //endStates.Dispose();
         tubeUpdateData.Dispose();
         generic[0].Dispose();
         generic[1].Dispose();
-    }
-    
-    void initGenerators()
-    {
-        generators = new GeneratorData[arrayLength];
     }
     
     float elapsedTime;
@@ -180,41 +191,66 @@ public class TubeSimulate : MonoBehaviour {
     {
         sampler.Begin();
         generic[0].lateUpdate();
-        for (int i = 0; i < generic[0].tempGenericUpdateOps.Length; ++i) {
-            if (generic[0].tempGenericUpdateOps[i] != 0) {
-                // check if this generator has space at its end?
-                if (tubeHasSpace(endStates[i].idx)) {
-
-                    pushToTube(endStates[i].idx);
-                    // consume a unit of resource.
-                    self.op1Generator(i);
-                }
-            }
-        }
+        
 
         generic[1].lateUpdate();
 #if DEBUG_JOB
 #else
         updateTubesJH.Complete();
 #endif
+        // tubes output
         for (int i = 0; i < arrayLength; ++i)
         {
             int op = updateTubesJob.outputOps[i];
             if (op != 0)
             {
                 CanTakeState cts = endStates[tubes[i].idxInStateArray];
-                
-                byte state = cts.state;
-                if (state == 0)
+                if (cts.type == 0) // tube
                 {
-                    // the end point is empty, let the tube remove this element and assign a new one.
-                    tubes[i].pop();
-                    tubes[cts.idx].push();
+                    //if (cts.cachedState == 0)
+                    //{
+                    //    // the end point is empty, let the tube remove this element and assign a new one.
+                    //    tubes[i].pop();
+                    //    tubes[cts.idx].push();
+                    //}
+                    //else if (cts.cachedState == 1)
+                    //{
+                    //    // this element is blocked, let the tube update the element before this.
+                    //    tubes[i].saturate();
+                    //}
+
+                    if (tubes[cts.idx].hasSpace())
+                    {
+                        tubes[i].pop();
+                        tubes[cts.idx].push();
+                        // consume a unit of resource.
+                    }
+                    else
+                    {
+                        tubes[i].saturate();
+                    }
                 }
-                else if (state == 1)
+                else if(cts.type == 1)
                 {
-                    // this element is blocked, let the tube update the element before this.
-                    tubes[i].saturate();
+
+                }
+            }
+        }
+        
+        // generator output
+        for (int i = 0; i < generic[0].tempGenericUpdateOps.Length; ++i)
+        {
+            if (generic[0].tempGenericUpdateOps[i] != 0)
+            {
+                CanTakeState cts = endStates[generators[i].idxInOutputStateArray];
+                // check if this generator has space at its end?
+                if (tubes[cts.idx].hasSpace())
+                {
+                    tubes[cts.idx].push();
+                    // consume a unit of resource.
+                    GeneratorData gen = generators[i];
+                    gen.onExpended();
+                    generators[i] = gen;
                 }
             }
         }

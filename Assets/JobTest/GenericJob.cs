@@ -1,4 +1,4 @@
-﻿//#define DEBUG_JOB
+﻿#define DEBUG_JOB
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -44,7 +44,7 @@ public class GenericJob {
             outputOps = tempGenericUpdateOps,
         };
 #if DEBUG_JOB
-        genericUpdateJob.Run(objCount);
+        genericUpdateJob.Run(count);
 #else
         genericUpdateJH = genericUpdateJob.Schedule(count, 64);
 #endif
