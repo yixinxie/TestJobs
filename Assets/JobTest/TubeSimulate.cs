@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Jobs;
 using Unity.Collections;
+using UnityEngine.Profiling;
+
 public struct CanTakeState {
     public int idx;
     public byte state;
@@ -40,9 +42,10 @@ public class TubeSimulate : MonoBehaviour {
         generic[0] = new GenericJob();
         generic[1] = new GenericJob();
     }
+    CustomSampler sampler;
     // Use this for initialization
     void Start () {
-        
+        sampler = UnityEngine.Profiling.CustomSampler.Create("Job System");
         tubes = new TubeData[arrayLength];
         tubeUpdateData = new NativeArray<TubeUpdateData>(arrayLength, Allocator.Persistent);
         //endStates = new NativeArray<CanTakeState>(arrayLength, Allocator.Persistent);
@@ -135,14 +138,15 @@ public class TubeSimulate : MonoBehaviour {
     public int count0;
     
     void Update() {
-
+        sampler.Begin();
         if (addnew)
         {
             addnew = false;
-            for (int i = 0; i < arrayLength; ++i)
-            {
-                tubes[i].push();
-            }
+            //for (int i = 0; i < arrayLength; ++i)
+            //{
+            //    tubes[i].push();
+            //}
+            tubes[0].push();
         }
         float deltaTime = Time.deltaTime;
         elapsedTime += deltaTime;
@@ -169,10 +173,12 @@ public class TubeSimulate : MonoBehaviour {
 #else
         updateTubesJH = updateTubesJob.Schedule(arrayLength, 64);
 #endif
+        sampler.End();
     }
 
     private void LateUpdate()
     {
+        sampler.Begin();
         generic[0].lateUpdate();
         for (int i = 0; i < generic[0].tempGenericUpdateOps.Length; ++i) {
             if (generic[0].tempGenericUpdateOps[i] != 0) {
@@ -212,7 +218,7 @@ public class TubeSimulate : MonoBehaviour {
                 }
             }
         }
-
+        sampler.End();
         // debug
         for (int j = 0; j < arrayLength; ++j)
         {
