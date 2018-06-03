@@ -4,4 +4,4 @@ Temp
 Packages
 obj
 .vs
-Assembly-CSharp.csproj
+*.csproj

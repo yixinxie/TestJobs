@@ -1,11 +1,13 @@
-﻿public struct GeneratorData
+﻿using UnityEngine;
+
+public struct GeneratorData
 {
     public int remaining;
     public float timeToMakeOne;
-    public int itemId;
+    public ushort itemId;
     public int idxInUpdateArray; // index in generalUpdateData
     public int idxInOutputStateArray;
-    public void init(int _itemId, float _speed, int _remaining, int idx, int outputIdx)
+    public void init(ushort _itemId, float _speed, int _remaining, int idx, int outputIdx)
     {
         remaining = _remaining;
         timeToMakeOne = _speed;
@@ -28,4 +30,6 @@
             start();
         }
     }
+    // visual related
+    public Vector3 pos;
 }

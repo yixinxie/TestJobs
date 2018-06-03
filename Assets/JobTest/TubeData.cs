@@ -1,4 +1,6 @@
-﻿public struct TubeData
+﻿using UnityEngine;
+
+public struct TubeData
 {
     const int MaxElement = 16;
     public float speed;
@@ -6,24 +8,32 @@
     public float length;
     public float itemHalfWidth;
     public short count, currentIndex;
+    public ushort itemId;
     public int idxInUpdateArray; // index in tubeOutputUpdateData
-    public int idxInStateArray; // index of the end state.
+    public int idxInOutputStateArray; // index of the end state.
+
+    // visual related
+    public Vector3 from;
+    public Vector3 toPos;
+
     public float getOffset()
     {
         TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
         return d.current;
     }
-    public TubeData(float _length, float _speed)
-    {
-        speed = _speed;
-        length = _length;
-        positions = new float[MaxElement];
-        itemHalfWidth = 0.5f;
-        count = 0;
-        idxInUpdateArray = -1;
-        currentIndex = -1;
-        idxInStateArray = -1;
-    }
+    //public TubeData(float _length, float _speed)
+    //{
+    //    speed = _speed;
+    //    length = _length;
+    //    positions = new float[MaxElement];
+    //    itemHalfWidth = 0.5f;
+    //    count = 0;
+    //    idxInUpdateArray = -1;
+    //    currentIndex = -1;
+    //    idxInOutputStateArray = -1;
+    //    from = Vector3.zero;
+    //    toPos = Vector3.zero;
+    //}
     public void init(float _length, float _speed)
     {
         speed = _speed;
@@ -35,17 +45,19 @@
         currentIndex = -1;
     }
 
-    public bool hasSpace() {
+    public bool hasSpace(ushort _itemId) {
         if (count == 0) return true;
 
+        if(itemId != 0 && _itemId != itemId) {
+            return false;
+        }
         TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
-
         return positions[0] + d.current - itemHalfWidth * 2f >= 0.0f;
     }
-    public void push()
+    public void push(ushort _itemId)
     {
         if(count >= MaxElement) return;
-
+        itemId = _itemId;
         if(count > 0)
         {
             TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];

@@ -15,13 +15,19 @@ public class GenericJob {
     public NativeArray<GenericUpdateData> genericUpdateData;
     public NativeArray<byte> tempGenericUpdateOps;
     int count;
+    bool debug;
     //CanTakeState[] endStates;
     // Use this for initialization
-    public GenericJob() {
+    public GenericJob(bool _debug) {
         genericUpdateData = new NativeArray<GenericUpdateData>(arrayLength, Allocator.Persistent);
+        //for(int i =0; i< arrayLength; ++i) {
+        //    genericUpdateData[i].timeLeft = -1f;
+
+        //}
+        
         tempGenericUpdateOps = new NativeArray<byte>(arrayLength, Allocator.Persistent);
         count = 0;
-        //endStates = new CanTakeState[arrayLength];
+        debug = _debug;
     }
     public void Dispose()
     {
@@ -43,29 +49,18 @@ public class GenericJob {
             dataArray = genericUpdateData,
             outputOps = tempGenericUpdateOps,
         };
-#if DEBUG_JOB
-        genericUpdateJob.Run(count);
-#else
-        genericUpdateJH = genericUpdateJob.Schedule(count, 64);
-#endif
+        if (debug) {
+            genericUpdateJob.Run(count);
+        }
+        else {
+            genericUpdateJH = genericUpdateJob.Schedule(count, 64);
+        }
     }
 
     public void lateUpdate() {
-#if DEBUG_JOB
-#else
-        genericUpdateJH.Complete();
-#endif
-        //for(int i = 0; i < tempGenericUpdateOps.Length; ++i) {
-        //    if(tempGenericUpdateOps[i] != 0) {
-        //        // check if this generator has space at its end?
-        //        if (TubeSimulate.self.tubeHasSpace(endStates[i].idx)) {
-                    
-        //            TubeSimulate.self.pushToTube(endStates[i].idx);
-        //            // consume a unit of resource.
-        //            TubeSimulate.self.op1Generator(i);
-        //        }
-        //    }
-        //}
+        if (!debug) {
+            genericUpdateJH.Complete();
+        }
     }
 }
 public struct GenericUpdateData {
@@ -80,11 +75,10 @@ public struct GenericUpdateJob : IJobParallelFor {
 
     public void Execute(int index) {
         GenericUpdateData thisData = dataArray[index];
-        if (thisData.timeLeft < 0.0f) {
+        if (thisData.timeLeft <= 0.0f) {
             outputOps[index] = 0;
         }
         else {
-            //thisData.timeLeft -= deltaTime * thisData.speed;
             thisData.timeLeft -= deltaTime;
 
             dataArray[index] = thisData;
