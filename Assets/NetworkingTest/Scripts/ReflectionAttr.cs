@@ -17,11 +17,18 @@ public enum SyncModes
 public class Replicated : Attribute
 {
     int syncMode;
+    string onRepFunc;
 
     public virtual SyncModes Mode
     {
         get { return (SyncModes)syncMode; }
         set { syncMode = (int)value; }
+    }
+
+    public virtual string OnRep
+    {
+        get { return onRepFunc; }
+        set { onRepFunc = (string)value; }
     }
 }
 public class ReflectionAttr : MonoBehaviour {

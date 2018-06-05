@@ -6,8 +6,8 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
-
-public class ClientTest : MonoBehaviour {
+public class ClientTest : MonoBehaviour
+{
     public static ClientTest self;
     public string serverAddr = "127.0.0.1";
     // Use this for initialization
@@ -41,6 +41,7 @@ public class ClientTest : MonoBehaviour {
         NetGOs = new Dictionary<int, ReplicatedProperties>();
         int bufferSize = 256;
         buffer = new byte[bufferSize];
+        repprops = new Dictionary<int, ReplicatedProperties>();
     }
 
     private void Start() {
@@ -49,113 +50,155 @@ public class ClientTest : MonoBehaviour {
         Debug.Log("Connected to server. ConnectionId: " + connectionId + " error:" + (int)error);
         //NetworkTransport.Send(hostId, connectionId, reliableCHN, buffer, bufferLength, out error);
     }
+    Dictionary<int, ReplicatedProperties> repprops;
+    int repprop_inc;
+    public int registerReplicatedProperties(ReplicatedProperties repprop)
+    {
+        int ret = repprop_inc;
+        repprops.Add(ret, repprop);
+        repprop_inc++;
+        return ret;
+    }
 
     public static byte decodeRawData(byte[] src, Dictionary<int, ReplicatedProperties> NetGOByServerInstId) {
-        ushort opcode = BitConverter.ToUInt16(src, 0);
+        int offset = 0;
+        int repItemCount = BitConverter.ToInt32(src, 2);
+        for (int j = 0; j < repItemCount; ++j)
+        {
+            ushort opcode = BitConverter.ToUInt16(src, offset);
+            offset += 2;
+            if (opcode == (ushort)NetOpCodes.SpawnPrefab)
+            {
+                int id_count = src[offset];
+                offset++;
+                int[] serverInstIds = new int[id_count];
+                bool found = false;
+                for (int i = 0; i < id_count; ++i)
+                {
+                    serverInstIds[i] = BitConverter.ToInt32(src, offset + i * 4);
+                    
+                    if(NetGOByServerInstId.ContainsKey(serverInstIds[i]))
+                    {
+                        found = true;
+                        break;
 
-        if (opcode == (ushort)NetOpCodes.SpawnPrefab) {
-            int serverGOInstId = BitConverter.ToInt32(src, 2);
-            ushort length = BitConverter.ToUInt16(src, 6);
-            string path = Encoding.ASCII.GetString(src, 8, length);
-            if (NetGOByServerInstId.ContainsKey(serverGOInstId) == false) {
-                Debug.Log("spawning " + path);
-                UnityEngine.Object o = Resources.Load(path);
-                GameObject spawnedGO = GameObject.Instantiate(o) as GameObject;
-                NetGOByServerInstId.Add(serverGOInstId, spawnedGO.GetComponent<ReplicatedProperties>());
+                    }
+                }
+                offset += 4 * id_count;
+
+                ushort length = BitConverter.ToUInt16(src, offset);
+                offset += 2;
+                string path = Encoding.ASCII.GetString(src, offset, length);
+                offset += length;
+                if (found == false)
+                {
+                    Debug.Log("spawning " + path);
+                    UnityEngine.Object o = Resources.Load(path);
+                    GameObject spawnedGO = GameObject.Instantiate(o) as GameObject;
+                    ReplicatedProperties[] rep_components = spawnedGO.GetComponents<ReplicatedProperties>();
+
+                    for (int i = 0; i < id_count; ++i)
+                    {
+                        NetGOByServerInstId.Add(serverInstIds[i], rep_components[i]);
+                    }
+                }
+                else
+                {
+                    Debug.Log("spawning a prefab from server that already exists: " + path);
+                }
             }
-            else {
-                Debug.Log("spawning a prefab from server that already exists: " + path);
+            else if (opcode == (ushort)NetOpCodes.RPCFunc)
+            {
+                //int serverGOInstId = BitConverter.ToInt32(src, 2);
+                //if (NetGOByServerInstId.ContainsKey(serverGOInstId)) {
+                //    ushort length = BitConverter.ToUInt16(src, 6);
+                //    string methodName = Encoding.ASCII.GetString(src, 8, length);
+                //    if (string.IsNullOrEmpty(methodName) == false)
+                //        NetGOByServerInstId[serverGOInstId].SendMessage(methodName);
+                //}
             }
-            
-        }
-        else if (opcode == (ushort)NetOpCodes.RPCFunc) {
-            int serverGOInstId = BitConverter.ToInt32(src, 2);
-            if (NetGOByServerInstId.ContainsKey(serverGOInstId)) {
-                ushort length = BitConverter.ToUInt16(src, 6);
-                string methodName = Encoding.ASCII.GetString(src, 8, length);
-                if (string.IsNullOrEmpty(methodName) == false)
-                    NetGOByServerInstId[serverGOInstId].SendMessage(methodName);
-            }
-        }
-        else if (opcode == (ushort)NetOpCodes.Replication) {
-            int repItemCount = BitConverter.ToInt32(src, 2);
-            int offset = 6; // 2 + 4
-            for(int i = 0; i < repItemCount; ++i) {
+            else if (opcode == (ushort)NetOpCodes.Replication)
+            {
+                
                 byte dataType = src[offset];
                 offset++;
-                if(dataType == RepItem.RepInt) {
-                    int intVal = BitConverter.ToInt32(src, offset);
-                    offset += 4;
+                int goid = BitConverter.ToInt32(src, offset);
+                offset += 4;
+                ushort varOffset = BitConverter.ToUInt16(src, offset);
+                offset += 2;
 
-                    int goid = BitConverter.ToInt32(src, offset);
-                    offset += 4;
-                    int varOffset = BitConverter.ToInt32(src, offset);
-                    offset += 4;
-
-                    if (NetGOByServerInstId.ContainsKey(goid)) {
+                if (dataType == RepItem.RepInt)
+                {
+                    if (NetGOByServerInstId.ContainsKey(goid))
+                    {
                         ReplicatedProperties propComp = NetGOByServerInstId[goid];
-                        if(propComp != null) {
-                            propComp.receive(varOffset, intVal);
+                        if (propComp != null)
+                        {
+                            propComp.receiveGeneric(varOffset, src, ref offset);
                         }
                     }
                 }
-                else if (dataType == RepItem.RepFloat) {
-                    float floatVal = BitConverter.ToSingle(src, offset);
-                    offset += 4;
-
-                    int goid = BitConverter.ToInt32(src, offset);
-                    offset += 4;
-                    int varOffset = BitConverter.ToInt32(src, offset);
-                    offset += 4;
-
-                    if (NetGOByServerInstId.ContainsKey(goid)) {
-                        ReplicatedProperties propComp = NetGOByServerInstId[goid];
-                        if (propComp != null) {
-                            propComp.receive(varOffset, floatVal);
-                        }
-                    }
+                else if (dataType == RepItem.RepFloat)
+                {
                 }
-                else if (dataType == RepItem.RepIntArray) {
-                    int arrayCount = BitConverter.ToInt32(src, offset);
-                    offset += 4;
-                    int[] newIntArray = new int[arrayCount];
-                    for(int j = 0; j < arrayCount; ++j) {
-                        newIntArray[j] = BitConverter.ToInt32(src, offset);
-                        offset += 4;
-                    }
+                else if (dataType == RepItem.RepIntArray)
+                {
+                    //int arrayCount = BitConverter.ToInt32(src, offset);
+                    //offset += 4;
+                    //int[] newIntArray = new int[arrayCount];
+                    //for (int j = 0; j < arrayCount; ++j)
+                    //{
+                    //    newIntArray[j] = BitConverter.ToInt32(src, offset);
+                    //    offset += 4;
+                    //}
 
-                    int goid = BitConverter.ToInt32(src, offset);
-                    offset += 4;
-                    int varOffset = BitConverter.ToInt32(src, offset);
-                    offset += 4;
+                    //int goid = BitConverter.ToInt32(src, offset);
+                    //offset += 4;
+                    //int varOffset = BitConverter.ToInt32(src, offset);
+                    //offset += 4;
 
-                    if (NetGOByServerInstId.ContainsKey(goid)) {
-                        ReplicatedProperties propComp = NetGOByServerInstId[goid];
-                        if (propComp != null) {
-                            propComp.receive(varOffset, newIntArray);
-                        }
-                    }
+                    //if (NetGOByServerInstId.ContainsKey(goid))
+                    //{
+                    //    ReplicatedProperties propComp = NetGOByServerInstId[goid];
+                    //    if (propComp != null)
+                    //    {
+                    //        propComp.receive(varOffset, newIntArray);
+                    //    }
+                    //}
                 }
-                else if (dataType == RepItem.RepGameObject) {
-                    int serverGOInstId = BitConverter.ToInt32(src, offset);
-                    offset += 4;
-                    ushort length = BitConverter.ToUInt16(src, offset);
-                    offset += 2;
-                    string path = Encoding.ASCII.GetString(src, 8, length);
-                    offset += length;
-                    if (NetGOByServerInstId.ContainsKey(serverGOInstId) == false) {
-                        Debug.Log("spawning " + path);
-                        UnityEngine.Object o = Resources.Load(path);
-                        GameObject spawnedGO = GameObject.Instantiate(o) as GameObject;
-                        NetGOByServerInstId.Add(serverGOInstId, spawnedGO.GetComponent<ReplicatedProperties>());
-                    }
-                    else {
-                        Debug.Log("spawning a prefab from server that already exists: " + path);
-                    }
-                }
+                    //else if (dataType == RepItem.RepGameObject) {
+                    //    int serverGOInstId = BitConverter.ToInt32(src, offset);
+                    //    offset += 4;
+                    //    ushort length = BitConverter.ToUInt16(src, offset);
+                    //    offset += 2;
+                    //    string path = Encoding.ASCII.GetString(src, 8, length);
+                    //    offset += length;
+                    //    if (NetGOByServerInstId.ContainsKey(serverGOInstId) == false) {
+                    //        Debug.Log("spawning " + path);
+                    //        UnityEngine.Object o = Resources.Load(path);
+                    //        GameObject spawnedGO = GameObject.Instantiate(o) as GameObject;
+                    //        NetGOByServerInstId.Add(serverGOInstId, spawnedGO.GetComponent<ReplicatedProperties>());
+                    //    }
+                    //    else {
+                    //        Debug.Log("spawning a prefab from server that already exists: " + path);
+                    //    }
+                    //}
             }
         }
         return 0;
+    }
+    public static int deserializeToInt(byte[] src, ref int offset)
+    {
+        int ret = BitConverter.ToInt32(src, offset);
+        offset += 4;
+        return ret;
+    }
+
+    public static float deserializeToFloat(byte[] src, ref int offset)
+    {
+        float ret = BitConverter.ToSingle(src, offset);
+        offset += 4;
+        return ret;
     }
 
     // client calls an RPC on the server

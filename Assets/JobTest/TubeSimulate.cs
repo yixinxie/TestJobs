@@ -253,7 +253,10 @@ public class TubeSimulate : MonoBehaviour {
         updateTubesJH = updateTubesJob.Schedule(arrayLength, 64);
 #endif
         sampler.End();
+        GameObject go = GameObject.Find("Directional Light");
+        sdf = go.GetInstanceID();
     }
+    public int sdf;
 
     private void LateUpdate()
     {
