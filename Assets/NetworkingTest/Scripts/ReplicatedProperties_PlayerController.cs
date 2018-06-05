@@ -8,7 +8,8 @@ public partial class ReplicatedProperties_PlayerController : ReplicatedPropertie
     
     [Replicated]
     public int testVal;
-    [Replicated(OnRep="testFloatChanged")]
+    //[Replicated(OnRep="testFloatChanged")]
+    [Replicated]
     public float testFloat;
     // onrep callbacks
     public Action<int> onRep_owner;
@@ -48,7 +49,7 @@ public partial class ReplicatedProperties_PlayerController : ReplicatedPropertie
     //    }
     //}
 
-    
+
 
     //public void rep_testVal() {
     //    ServerTest.self.addRepItem(goId, 1, testVal);
@@ -60,6 +61,10 @@ public partial class ReplicatedProperties_PlayerController : ReplicatedPropertie
     //{
 
     //}
+
+    private void testFloatChanged() {
+        throw new NotImplementedException();
+    }
     // generate this!
     public void ServerTestRPC(params object[] paramObjs) {
         ServerTest.self.invokeServerRPC("ServerTest_Implementation", paramObjs);

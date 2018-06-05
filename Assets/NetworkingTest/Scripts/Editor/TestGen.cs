@@ -45,14 +45,20 @@ public partial class %name%{
 
         string IntSwitchCaseTmpl = @"
             case %var_offset%:
-            %var% = ClientTest.deserializeToInt(src, ref offset);
-            %onrep%
+            {
+                int previousVal = %var%;
+                %var% = ClientTest.deserializeToInt(src, ref offset);
+                %onrep%
+            }
             break;
 ";
         string FloatSwitchCaseTmpl = @"
             case %var_offset%:
-            %var% = ClientTest.deserializeToFloat(src, ref offset);
-            %onrep%
+            {
+                float previousVal = %var%;
+                %var% = ClientTest.deserializeToFloat(src, ref offset);
+                %onrep%
+            }
             break;
 ";
         Type[] types = new Type[] {typeof(ReplicatedProperties_PlayerController) };
@@ -92,24 +98,23 @@ public partial class %name%{
 
                 insSwitch = insSwitch.Replace("%var_offset%", "" + fieldIndex);
                 insSwitch = insSwitch.Replace("%var%", fieldInfo.Name);
-                if (string.IsNullOrEmpty(repAttr.OnRep) == false)
+                if (string.IsNullOrEmpty(repAttr.OnRep))
                 {
-                    insSwitch = insSwitch.Replace("%onrep%", repAttr.OnRep);
+                    insSwitch = insSwitch.Replace("%onrep%", "");
+                    
                 }
                 else
                 {
-                    insSwitch = insSwitch.Replace("%onrep%", repAttr.OnRep);
+                    insSwitch = insSwitch.Replace("%onrep%", repAttr.OnRep + "(previousVal);");
                 }
                 switchBody.Append(insSwitch.ToString());
 
                 fieldIndex++;
-
-
             }
+
             string fullClassText = repClassTemplate.Replace("%name%", thisType.ToString());
             fullClassText = fullClassText.Replace("%send_body%", sendBody.ToString());
             fullClassText = fullClassText.Replace("%switch_body%", switchBody.ToString());
-            
             //fullClassText = fullClassText.Replace("%order%", "" + i);
             csOut.Write(fullClassText.ToString());
             csOut.Close();
