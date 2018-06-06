@@ -8,28 +8,25 @@ public class ReplicatedProperties : MonoBehaviour {
     protected virtual void initNetworking()
     {
         goId = GetInstanceID();
-        if (ClientTest.self != null)
-        {
-            ClientTest.self.registerReplicatedProperties(this);
-        }
-        if(ServerTest.self != null)
-        {
-
-        }
-        
     }
     // called on client
-    public virtual void receive(int offset, int newVal) {
-
-    }
-    public virtual void receiveGeneric(ushort varOffset, byte[] src, ref int offset)
+    public virtual bool stateRepReceive(ushort varOffset, byte[] src, ref int offset)
     {
-
+        if(varOffset == 0)
+        {
+            owner = ClientTest.deserializeToInt(src, ref offset);
+            return true;
+        }
+        return false;
     }
 
     public void rep_owner()
     {
         ServerTest.self.rflcAddInt(goId, 0, owner);
     }
-    
+
+    public virtual bool rpcReceive(ushort rpc_id, byte[] src, ref int offset)
+    {
+        return false;
+    }
 }

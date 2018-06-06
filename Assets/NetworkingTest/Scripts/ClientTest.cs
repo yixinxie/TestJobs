@@ -41,7 +41,7 @@ public class ClientTest : MonoBehaviour
         NetGOs = new Dictionary<int, ReplicatedProperties>();
         int bufferSize = 256;
         buffer = new byte[bufferSize];
-        repprops = new Dictionary<int, ReplicatedProperties>();
+        //repprops = new Dictionary<int, ReplicatedProperties>();
     }
 
     private void Start() {
@@ -50,16 +50,19 @@ public class ClientTest : MonoBehaviour
         Debug.Log("Connected to server. ConnectionId: " + connectionId + " error:" + (int)error);
         //NetworkTransport.Send(hostId, connectionId, reliableCHN, buffer, bufferLength, out error);
     }
-    Dictionary<int, ReplicatedProperties> repprops;
-    int repprop_inc;
-    public int registerReplicatedProperties(ReplicatedProperties repprop)
+    //Dictionary<int, ReplicatedProperties> repprops;
+    //int repprop_inc;
+    //public int registerReplicatedProperties(ReplicatedProperties repprop)
+    //{
+    //    int ret = repprop_inc;
+    //    repprops.Add(ret, repprop);
+    //    repprop_inc++;
+    //    return ret;
+    //}
+    public void rpcParamAddInt(int component_id, int rpcId, int intVal)
     {
-        int ret = repprop_inc;
-        repprops.Add(ret, repprop);
-        repprop_inc++;
-        return ret;
-    }
 
+    }
     public static byte decodeRawData(byte[] src, Dictionary<int, ReplicatedProperties> NetGOByServerInstId) {
         int offset = 0;
         int repItemCount = BitConverter.ToInt32(src, 2);
@@ -134,7 +137,7 @@ public class ClientTest : MonoBehaviour
                         ReplicatedProperties propComp = NetGOByServerInstId[goid];
                         if (propComp != null)
                         {
-                            propComp.receiveGeneric(varOffset, src, ref offset);
+                            propComp.stateRepReceive(varOffset, src, ref offset);
                         }
                     }
                 }
@@ -201,32 +204,12 @@ public class ClientTest : MonoBehaviour
         return ret;
     }
 
-    // client calls an RPC on the server
-    public byte callRPCOnServer(ReplicatedProperties netgo, string methodName) {
-        byte error;
-        
-        ushort opcode = (ushort)NetOpCodes.RPCFunc;
-        byte[] intBytes = BitConverter.GetBytes(opcode);
-        Array.Copy(intBytes, 0, buffer, 0, intBytes.Length);
-        int GOInstanceID = netgo.GetInstanceID();
-        int offset = intBytes.Length;
-        byte[] instIdBytes = BitConverter.GetBytes(GOInstanceID);
-
-        Array.Copy(instIdBytes, 0, buffer, offset, instIdBytes.Length);
-        offset += instIdBytes.Length;
-
-        byte[] lengthBytes = BitConverter.GetBytes((ushort)methodName.Length);
-        Array.Copy(lengthBytes, 0, buffer, offset, lengthBytes.Length);
-        offset += lengthBytes.Length;
-
-        byte[] stringBytes = Encoding.ASCII.GetBytes(methodName);
-        Array.Copy(stringBytes, 0, buffer, offset, stringBytes.Length);
-        offset += stringBytes.Length;
-
-        NetworkTransport.Send(socketId, connectionId, reliableCHN, buffer, offset, out error);
-        return error;
+    public void rpcParamAddInt(int component_id, ushort rpc_id, int intVal)
+    {
     }
-
+    public void rpcParamAddFloat(int component_id, ushort rpc_id, float floatVal)
+    {
+    }
     private void OnDestroy() {
         byte error;
         NetworkTransport.Disconnect(socketId, connectionId, out error);

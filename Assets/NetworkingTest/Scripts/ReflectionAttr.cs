@@ -31,6 +31,21 @@ public class Replicated : Attribute
         set { onRepFunc = (string)value; }
     }
 }
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+public class OnRep : Attribute
+{
+}
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+public class RPC : Attribute
+{
+    bool reliable = true;
+
+    public virtual bool Reliable
+    {
+        get { return reliable; }
+        set { reliable = (bool)value; }
+    }
+}
 public class ReflectionAttr : MonoBehaviour {
     [Replicated(Mode = SyncModes.OwnerOnly)]
     public int testInt;
