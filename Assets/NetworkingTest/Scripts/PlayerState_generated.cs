@@ -30,9 +30,9 @@ public partial class PlayerState{
             break;
 
             case 65:
-            float old_testFloat = testFloat;
+            //float old_testFloat = testFloat;
             testFloat = ClientTest.deserializeToFloat(src, ref offset);
-            testFloatChanged(old_testFloat);
+            //(old_testFloat);
             
             break;
 

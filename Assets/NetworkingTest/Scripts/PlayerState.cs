@@ -8,14 +8,14 @@ public partial class PlayerState : ReplicatedProperties {
     
     [Replicated]
     public int testVal;
-    [Replicated(OnRep="testFloatChanged")]
+    [Replicated]
     public float testFloat;
     // onrep callbacks
     private void Awake()
     {
         initNetworking();
     }
-    [OnRep]
+    [OnRep(forVar = "testFloat2")]
     private void testFloatChanged(float oldfloat) {
     }
 

@@ -103,6 +103,22 @@ public class TestGen {
         switchText = switchSB.ToString();
         return ret.ToString();
     }
+    static Dictionary<string,string> generateOnrepCode(Type thisType) {
+        const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Public |
+             BindingFlags.Instance | BindingFlags.Static;
+        MethodInfo[] methodInfo = thisType.GetMethods(flags);
+        Dictionary<string, string> ret = new Dictionary<string, string>();
+        for (int i = 0; i < methodInfo.Length; ++i) {
+            OnRep[] attributes = methodInfo[i].GetCustomAttributes(typeof(OnRep), true) as OnRep[];
+            if (attributes == null || attributes.Length == 0) continue;
+            for (int j = 0; j < attributes.Length; ++j) {
+                if(string.IsNullOrEmpty(attributes[j].forVar) == false) {
+                    ret.Add(attributes[j].forVar, methodInfo[i].Name);
+                }
+            }
+        }
+        return ret;
+    }
     static string generateRPCInvokeString(ParameterInfo[] paramInfo, out string paramListText)
     {
         StringBuilder paramText = new StringBuilder();
@@ -163,7 +179,8 @@ public partial class %name%{
         StringBuilder fullClassText = new StringBuilder(csClassTmpl.Replace("%name%", thisType.ToString()));
 
         string sendBody, switchBody;
-        sendBody = generateStateRepCode(thisType, out switchBody);
+        Dictionary<string, string> onRepForVars = generateOnrepCode(thisType);
+        sendBody = generateStateRepCode(thisType, out switchBody, onRepForVars);
         fullClassText.Replace("%rep_body%", sendBody);
         fullClassText.Replace("%rep_switch_body%", switchBody);
 
@@ -201,7 +218,7 @@ public partial class %name%{
             
             break;
 ";
-    static string generateStateRepCode(Type thisType, out string repSwitchCode)
+    static string generateStateRepCode(Type thisType, out string repSwitchCode, Dictionary<string,string> onRepForVars)
     {
         const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Public |
              BindingFlags.Instance | BindingFlags.Static;
@@ -236,15 +253,16 @@ public partial class %name%{
 
             insSwitch = insSwitch.Replace("%var_offset%", "" + fieldIndex);
             insSwitch = insSwitch.Replace("%var%", fieldInfo.Name);
-            if (string.IsNullOrEmpty(repAttr.OnRep))
+            if (onRepForVars.ContainsKey(fieldInfo.Name))
             {
-                insSwitch = insSwitch.Replace("%hasonrep%", "//");
-                insSwitch = insSwitch.Replace("%onrep%", "");
+                
+                insSwitch = insSwitch.Replace("%hasonrep%", "");
+                insSwitch = insSwitch.Replace("%onrep%", onRepForVars[fieldInfo.Name]);
             }
             else
             {
-                insSwitch = insSwitch.Replace("%hasonrep%", "");
-                insSwitch = insSwitch.Replace("%onrep%", repAttr.OnRep);
+                insSwitch = insSwitch.Replace("%hasonrep%", "//");
+                insSwitch = insSwitch.Replace("%onrep%", "");
             }
             switchBody.Append(insSwitch.ToString());
             fieldIndex++;
