@@ -126,40 +126,14 @@ public class ServerTest : MonoBehaviour {
         }
     }
 
-    //byte spawnNetGameObjectOnSingleRemote(int goid, string path, int connId) {
-    //    byte error;
-
-    //    ushort opcode = (ushort)NetOpCodes.SpawnPrefab;
-    //    byte[] intBytes = BitConverter.GetBytes(opcode);
-    //    Array.Copy(intBytes, 0, buffer, 0, intBytes.Length);
-    //    int offset = intBytes.Length;
-
-    //    // instance Id
-    //    byte[] instIdBytes = BitConverter.GetBytes(goid);
-    //    Array.Copy(instIdBytes, 0, buffer, offset, instIdBytes.Length);
-    //    offset += instIdBytes.Length;
-
-    //    // path string length
-    //    byte[] lengthBytes = BitConverter.GetBytes((ushort)path.Length);
-    //    Array.Copy(lengthBytes, 0, buffer, offset, lengthBytes.Length);
-    //    offset += lengthBytes.Length;
-
-    //    // path string
-    //    byte[] stringBytes = Encoding.ASCII.GetBytes(path);
-    //    Array.Copy(stringBytes, 0, buffer, offset, stringBytes.Length);
-    //    offset += stringBytes.Length;
-
-    //    NetworkTransport.Send(socketId, connId, reliableCHN, buffer, offset, out error);
-    //    return error;
-    //}
     byte spawnNetGameObjectOnSingleRemote2(int[] component_ids, string path, int connId)
     {
-
+        int offset = refBufIndex;
         // 2    1   4x?   2     ?
-        ushort opcode = (ushort)NetOpCodes.SpawnPrefab;
-        byte[] intBytes = BitConverter.GetBytes(opcode);
-        Array.Copy(intBytes, 0, reflectionBuffer, 0, intBytes.Length);
-        int offset = intBytes.Length;
+        byte[] intBytes = BitConverter.GetBytes((ushort)NetOpCodes.SpawnPrefab);
+        Array.Copy(intBytes, 0, reflectionBuffer, offset, intBytes.Length);
+        
+        offset += intBytes.Length;
 
         // instance id count
         reflectionBuffer[offset] = (byte)component_ids.Length;
@@ -183,6 +157,7 @@ public class ServerTest : MonoBehaviour {
         offset += stringBytes.Length;
 
         commandCount++;
+        refBufIndex = offset;
         //NetworkTransport.Send(socketId, connId, reliableCHN, buffer, offset, out error);
         return 0;
     }
@@ -351,7 +326,7 @@ public class ServerTest : MonoBehaviour {
         Array.Copy(length_bytes, 0, reflectionBuffer, refBufIndex, 2);
         refBufIndex += 2;
 
-        // component id, ushort
+        // component id, int
         byte[] component_id_bytes = BitConverter.GetBytes(component_id);
         Array.Copy(component_id_bytes, 0, reflectionBuffer, refBufIndex, 4);
         refBufIndex += 4;
@@ -401,7 +376,6 @@ public class ServerTest : MonoBehaviour {
     }
     #endregion
 
-   
     void replicateToClients2()
     {
         if (commandCount == 0) return;
@@ -418,132 +392,6 @@ public class ServerTest : MonoBehaviour {
         refBufIndex = 4;
     }
 
-    //public void addRepItem(int goid, int offsetId, int intVal)
-    //{
-    //    RepItem newItem = new RepItem(RepItem.RepInt);
-    //    newItem.instanceId = goid;
-    //    newItem.offset = offsetId;
-    //    newItem.value = BitConverter.GetBytes(intVal);
-    //    newItem.ptr = intVal;
-    //    repItems.Add(newItem);
-    //}
-    //public void addRepItem(int goid, int offsetId, float floatVal)
-    //{
-    //    RepItem newItem = new RepItem(RepItem.RepFloat);
-    //    newItem.instanceId = goid;
-    //    newItem.offset = offsetId;
-    //    newItem.value = BitConverter.GetBytes(floatVal);
-    //    repItems.Add(newItem);
-    //}
-    //public void addRepItem(int goid, int offsetId, int[] intArray)
-    //{
-    //    RepItem newItem = new RepItem(RepItem.RepIntArray);
-    //    newItem.instanceId = goid;
-    //    newItem.offset = offsetId;
-    //    //newItem.value = BitConverter.GetBytes(floatVal);
-    //    repItems.Add(newItem);
-    //}
-    //void replicateToClients() {
-    //    if (repItems.Count == 0) return;
-
-    //    byte error;
-    //    ushort opcode = (ushort)NetOpCodes.Replication;
-    //    byte[] intBytes = BitConverter.GetBytes(opcode);
-    //    Array.Copy(intBytes, 0, buffer, 0, intBytes.Length);
-    //    int offset = intBytes.Length;
-  
-  
-    //    byte[] repItemCountBytes = BitConverter.GetBytes(repItems.Count);
-    //    Array.Copy(repItemCountBytes, 0, buffer, offset, repItemCountBytes.Length);
-    //    offset += repItemCountBytes.Length;
-
-        
-    //    for(int i = 0; i < repItems.Count; ++i) {
-    //        RepItem repItem = repItems[i];
-    //        if (repItem.dataType == RepItem.RepInt) { // value type
-    //            buffer[offset] = repItem.dataType;
-    //            offset++;
-
-    //            Array.Copy(repItem.value, 0, buffer, offset, 4);
-    //            offset += 4;
-    //        }
-    //        else if (repItem.dataType == RepItem.RepFloat) { // value type
-    //            buffer[offset] = repItem.dataType;
-    //            offset++;
-
-    //            Array.Copy(repItem.value, 0, buffer, offset, 4);
-    //            offset += 4;
-    //        }
-    //        else if (repItem.dataType == RepItem.RepString) { // ref type
-    //            buffer[offset] = repItem.dataType;
-    //            offset++;
-    //            byte[] stringBytes = Encoding.ASCII.GetBytes(repItem.ptr as string);
-    //            Array.Copy(BitConverter.GetBytes(stringBytes.Length), 0, buffer, offset, 4); // string length
-    //            offset += 4;
-
-    //            Array.Copy(stringBytes, 0, buffer, offset, stringBytes.Length);
-    //            offset += stringBytes.Length;
-    //        }
-    //        //else if (repItem.dataType == RepItem.RepVec2) { // ref type
-    //        //    buffer[offset] = repItem.dataType;
-    //        //    offset++;
-    //        //    Vector2 vec2 = (Vector2)repItem.ptr;
-    //        //    Array.Copy(BitConverter.GetBytes(vec2.x), 0, buffer, offset, 4);
-    //        //    offset += 4;
-    //        //    Array.Copy(BitConverter.GetBytes(vec2.y), 0, buffer, offset, 4);
-    //        //    offset += 4;
-    //        //}
-    //        //else if (repItem.dataType == RepItem.RepVec3) { // ref type
-    //        //    buffer[offset] = repItem.dataType;
-    //        //    offset++;
-    //        //    Vector3 vec3 = (Vector3)repItem.ptr;
-    //        //    Array.Copy(BitConverter.GetBytes(vec3.x), 0, buffer, offset, 4);
-    //        //    offset += 4;
-    //        //    Array.Copy(BitConverter.GetBytes(vec3.y), 0, buffer, offset, 4);
-    //        //    offset += 4;
-    //        //    Array.Copy(BitConverter.GetBytes(vec3.z), 0, buffer, offset, 4);
-    //        //    offset += 4;
-    //        //}
-    //        //else if (repItem.dataType == RepItem.RepIntArray) { // ref type
-    //        //    buffer[offset] = repItem.dataType;
-    //        //    offset++;
-
-    //        //    int[] intArray = (int[])repItem.ptr;
-    //        //    Array.Copy(BitConverter.GetBytes(intArray.Length), 0, buffer, offset, 4); // array length
-    //        //    offset += 4;
-                
-    //        //    for (int j = 0; j < intArray.Length; ++j) {
-    //        //        Array.Copy(BitConverter.GetBytes(intArray[j]), 0, buffer, offset, 4);
-    //        //        offset += 4;
-    //        //    }
-    //        //}
-    //        //else if (repItem.dataType == RepItem.RepFloatArray) { // ref type
-    //        //    buffer[offset] = repItem.dataType;
-    //        //    offset++;
-
-    //        //    float[] floatArrray = (float[])repItem.ptr;
-    //        //    Array.Copy(BitConverter.GetBytes(floatArrray.Length), 0, buffer, offset, 4); // array length
-    //        //    offset += 4;
-
-    //        //    for (int j = 0; j < floatArrray.Length; ++j) {
-    //        //        Array.Copy(BitConverter.GetBytes(floatArrray[j]), 0, buffer, offset, 4);
-    //        //        offset += 4;
-    //        //    }
-    //        //}
-    //        else {
-    //            continue;
-    //        }
-
-    //        Array.Copy(BitConverter.GetBytes(repItem.instanceId), 0, buffer, offset, 4);
-    //        offset += 4;
-    //        Array.Copy(BitConverter.GetBytes(repItem.offset), 0, buffer, offset, 4);
-    //        offset += 4;
-    //    }
-
-    //    for (int i = 0; i < playerControllers.Count; ++i) {
-    //        NetworkTransport.Send(socketId, playerControllers[i], reliableCHN, buffer, offset, out error);
-    //    }
-    //}
     #region RPC
     public void invokeServerRPC(string methodName, params object[] paramObjs) {
 

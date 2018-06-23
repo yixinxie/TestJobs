@@ -65,7 +65,8 @@ public class ClientTest : MonoBehaviour
     }
     public static byte decodeRawData(byte[] src, Dictionary<int, ReplicatedProperties> NetGOByServerInstId) {
         int offset = 0;
-        int repItemCount = BitConverter.ToInt32(src, 2);
+        int repItemCount = BitConverter.ToInt32(src, 0);
+        offset += 4;
         for (int j = 0; j < repItemCount; ++j)
         {
             ushort opcode = BitConverter.ToUInt16(src, offset);
@@ -125,21 +126,33 @@ public class ClientTest : MonoBehaviour
                 
                 byte dataType = src[offset];
                 offset++;
-                int goid = BitConverter.ToInt32(src, offset);
+                ushort totalLength = BitConverter.ToUInt16(src, offset);
+                offset += 2;
+                int bkLength = offset;
+                int component_id = BitConverter.ToInt32(src, offset);
                 offset += 4;
                 ushort varOffset = BitConverter.ToUInt16(src, offset);
                 offset += 2;
 
                 if (dataType == RepItem.RepInt)
                 {
-                    if (NetGOByServerInstId.ContainsKey(goid))
+                    if (NetGOByServerInstId.ContainsKey(component_id))
                     {
-                        ReplicatedProperties propComp = NetGOByServerInstId[goid];
+                        ReplicatedProperties propComp = NetGOByServerInstId[component_id];
                         if (propComp != null)
                         {
                             propComp.stateRepReceive(varOffset, src, ref offset);
                         }
+                        else {
+                            Debug.Log("the server is trying to replicate a property to a component that no longer exists.");
+                            offset = bkLength + totalLength;
+                        }
                     }
+                    else {
+                        Debug.Log("the server is trying to replicate a property to a component that no longer exists.");
+                        offset = bkLength + totalLength;
+                    }
+                    
                 }
                 else if (dataType == RepItem.RepFloat)
                 {
@@ -169,23 +182,6 @@ public class ClientTest : MonoBehaviour
                     //    }
                     //}
                 }
-                    //else if (dataType == RepItem.RepGameObject) {
-                    //    int serverGOInstId = BitConverter.ToInt32(src, offset);
-                    //    offset += 4;
-                    //    ushort length = BitConverter.ToUInt16(src, offset);
-                    //    offset += 2;
-                    //    string path = Encoding.ASCII.GetString(src, 8, length);
-                    //    offset += length;
-                    //    if (NetGOByServerInstId.ContainsKey(serverGOInstId) == false) {
-                    //        Debug.Log("spawning " + path);
-                    //        UnityEngine.Object o = Resources.Load(path);
-                    //        GameObject spawnedGO = GameObject.Instantiate(o) as GameObject;
-                    //        NetGOByServerInstId.Add(serverGOInstId, spawnedGO.GetComponent<ReplicatedProperties>());
-                    //    }
-                    //    else {
-                    //        Debug.Log("spawning a prefab from server that already exists: " + path);
-                    //    }
-                    //}
             }
         }
         return 0;

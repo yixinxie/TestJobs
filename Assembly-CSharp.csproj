@@ -66,6 +66,7 @@
     <Compile Include="Assets\JobTest\TubeData.cs" />
     <Compile Include="Assets\JobTest\TubeSimulate.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\ClientTest.cs" />
+    <Compile Include="Assets\NetworkingTest\Scripts\NetworkTestStart.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\PlayerState.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\PlayerState_generated.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\ReflectionAttr.cs" />
