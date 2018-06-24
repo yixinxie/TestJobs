@@ -5,7 +5,7 @@ using UnityEngine;
 /* Generated, Do not modify!*/
 public partial class PlayerState : ReplicatedProperties {
     // Use this for initialization
-    
+    public string characterPrefabPath;
     [Replicated]
     public int testVal;
     [Replicated]
@@ -29,5 +29,10 @@ public partial class PlayerState : ReplicatedProperties {
     public void testRPCtwo(int testint, float testfloat, float float2)
     {
 
+    }
+    private void Start() {
+        if(ServerTest.self != null) {
+            ServerTest.self.spawnNetGameObject2(null, characterPrefabPath);
+        }
     }
 }

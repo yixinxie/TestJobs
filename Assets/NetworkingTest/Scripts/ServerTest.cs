@@ -30,7 +30,7 @@ public class ServerTest : MonoBehaviour {
     int unreliableCHN;
     byte[] recBuffer;
     List<int> playerStates;
-    public string PlayerControllerPrefabPath;
+    public string PlayerStatePrefabPath;
     Dictionary<int, ReplicatedProperties> ARNetGOs; // instance id, game object
     Dictionary<int, List<RepStates>> NetGOByOwners; // player controller(connection) id, owned NetGOs.
 
@@ -82,25 +82,17 @@ public class ServerTest : MonoBehaviour {
         NetworkTransport.Send(socketId, pcid, reliableCHN, buffer, bufferSize, out error);
     }
 
-    //public byte createPlayerController_old(int connId, out int goid) {
-    //    // first create it on the server.
-    //    UnityEngine.Object NetGOObj = Resources.Load(PlayerControllerPrefabPath);
-    //    GameObject newNetGO = GameObject.Instantiate(NetGOObj) as GameObject;
-    //    ReplicatedProperties_PlayerController repProps = newNetGO.GetComponent<ReplicatedProperties>() as ReplicatedProperties_PlayerController;
-    //    //ReplicatedProperties repProps = newNetGO.GetComponent<ReplicatedProperties>() as ReplicatedProperties;
-    //    goid = repProps.GetInstanceID();
-    //    RepStates newRepState = new RepStates(repProps);
-
-    //    ARNetGOs.Add(goid, repProps);
-    //    remotePC = newNetGO;    //???
-    //    repProps.owner = connId;
-    //    repProps.rep_owner();
-    //    return 0;
-    //}
-    public GameObject createPlayerController(int connId, out int[] comp_ids, out byte[] order_ids)
+    public void spawnReplicatedGameObject(int connId, string path) {
+        int[] goid;
+        byte[] order_ids;
+        GameObject pcgo = spawnPrefabOnServer(connId, path, out goid, out order_ids);
+        spawnNetGameObject2(goid, PlayerStatePrefabPath);
+        repPropertyComponents(pcgo);
+    }
+    public GameObject spawnPrefabOnServer(int connId, string prefabPath, out int[] comp_ids, out byte[] order_ids)
     {
         // first create it on the server.
-        UnityEngine.Object netGO = Resources.Load(PlayerControllerPrefabPath);
+        UnityEngine.Object netGO = Resources.Load(prefabPath);
         GameObject newNetGO = GameObject.Instantiate(netGO) as GameObject;
         //ReplicatedProperties_PlayerController repProps = newNetGO.GetComponent<ReplicatedProperties>() as ReplicatedProperties_PlayerController;
         ReplicatedProperties[] repComponents = newNetGO.GetComponents<ReplicatedProperties>();
@@ -111,8 +103,6 @@ public class ServerTest : MonoBehaviour {
             comp_ids[i] = repComponents[i].GetInstanceID();
             ARNetGOs.Add(comp_ids[i], repComponents[i]);
             repComponents[i].owner = connId;
-            //order_ids[i] = repComponents[i].orderOnGO;
-            //repComponents[i].rep_owner(); purposely defer this until the gameobject replication command is inserted.
         }
         
         return newNetGO;
@@ -236,8 +226,8 @@ public class ServerTest : MonoBehaviour {
                     playerStates.Add(recConnectionId);
                     int[] goid;
                     byte[] order_ids;
-                    GameObject pcgo = createPlayerController(recConnectionId, out goid, out order_ids);
-                    spawnNetGameObject2(goid, PlayerControllerPrefabPath);
+                    GameObject pcgo = spawnPrefabOnServer(recConnectionId, PlayerStatePrefabPath, out goid, out order_ids);
+                    spawnNetGameObject2(goid, PlayerStatePrefabPath);
                     repPropertyComponents(pcgo);
                     break;
                 case NetworkEventType.DataEvent:       //3
