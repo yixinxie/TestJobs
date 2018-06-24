@@ -65,35 +65,29 @@ public class ClientTest : MonoBehaviour
     }
     public static byte decodeRawData(byte[] src, Dictionary<int, ReplicatedProperties> NetGOByServerInstId) {
         int offset = 0;
-        int repItemCount = BitConverter.ToInt32(src, 0);
-        offset += 4;
+        int repItemCount = deserializeToInt(src, ref offset);
         for (int j = 0; j < repItemCount; ++j)
         {
-            ushort opcode = BitConverter.ToUInt16(src, offset);
-            offset += 2;
+            ushort opcode = deserializeToUShort(src, ref offset);
             if (opcode == (ushort)NetOpCodes.SpawnPrefab)
             {
                 int id_count = src[offset];
                 offset++;
                 int[] serverInstIds = new int[id_count];
                 bool found = false;
+                int tmpOffset = offset;
                 for (int i = 0; i < id_count; ++i)
                 {
-                    serverInstIds[i] = BitConverter.ToInt32(src, offset + i * 4);
-                    
+                    serverInstIds[i] = deserializeToInt(src, ref tmpOffset);
                     if(NetGOByServerInstId.ContainsKey(serverInstIds[i]))
                     {
                         found = true;
                         break;
-
                     }
                 }
                 offset += 4 * id_count;
 
-                ushort length = BitConverter.ToUInt16(src, offset);
-                offset += 2;
-                string path = Encoding.ASCII.GetString(src, offset, length);
-                offset += length;
+                string path = deserializeToString(src, ref offset);
                 if (found == false)
                 {
                     Debug.Log("spawning " + path);
@@ -126,13 +120,10 @@ public class ClientTest : MonoBehaviour
                 
                 byte dataType = src[offset];
                 offset++;
-                ushort totalLength = BitConverter.ToUInt16(src, offset);
-                offset += 2;
+                ushort totalLength= deserializeToUShort(src, ref offset);
                 int bkLength = offset;
-                int component_id = BitConverter.ToInt32(src, offset);
-                offset += 4;
-                ushort varOffset = BitConverter.ToUInt16(src, offset);
-                offset += 2;
+                int component_id = deserializeToInt(src, ref offset);
+                ushort varOffset = deserializeToUShort(src, ref offset);
 
                 if (dataType == RepItem.RepInt)
                 {
@@ -186,10 +177,53 @@ public class ClientTest : MonoBehaviour
         }
         return 0;
     }
+    public static void serializeByte(byte[] src, byte byteVal, ref int offset) {
+        src[offset] = byteVal;
+        offset++;
+    }
+    public static void serializeInt(byte[] src, int intVal, ref int offset) {
+        byte[] intRaw = BitConverter.GetBytes(intVal);
+        Array.Copy(intRaw, 0, src, offset, 4);
+        offset += 4;
+    }
+    public static void serializeUShort(byte[] src, ushort ushortVal, ref int offset) {
+        byte[] ushortRaw = BitConverter.GetBytes(ushortVal);
+        Array.Copy(ushortRaw, 0, src, offset, 2);
+        offset += 2;
+    }
+    public static void serializeFloat(byte[] src, float floatVal, ref int offset) {
+        byte[] floatRaw = BitConverter.GetBytes(floatVal);
+        Array.Copy(floatRaw, 0, src, offset, 4);
+        offset += 4;
+    }
+    public static void serializeString(byte[] src, string strVal, ref int offset) {
+        // path string length
+        byte[] lengthBytes = BitConverter.GetBytes((ushort)strVal.Length);
+        Array.Copy(lengthBytes, 0, src, offset, 2);
+        offset += 2;
+
+        // path string
+        byte[] stringBytes = Encoding.ASCII.GetBytes(strVal);
+        Array.Copy(stringBytes, 0, src, offset, stringBytes.Length);
+        offset += stringBytes.Length;
+    }
+
     public static int deserializeToInt(byte[] src, ref int offset)
     {
         int ret = BitConverter.ToInt32(src, offset);
         offset += 4;
+        return ret;
+    }
+    public static ushort deserializeToUShort(byte[] src, ref int offset) {
+        ushort ret = BitConverter.ToUInt16(src, offset);
+        offset += 2;
+        return ret;
+    }
+    public static string deserializeToString(byte[] src, ref int offset) {
+        ushort length = BitConverter.ToUInt16(src, offset);
+        offset += 2;
+        string ret = Encoding.ASCII.GetString(src, offset, length);
+        offset += length;
         return ret;
     }
 

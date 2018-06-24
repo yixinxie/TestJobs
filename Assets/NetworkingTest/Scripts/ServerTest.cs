@@ -130,31 +130,15 @@ public class ServerTest : MonoBehaviour {
     {
         int offset = refBufIndex;
         // 2    1   4x?   2     ?
-        byte[] intBytes = BitConverter.GetBytes((ushort)NetOpCodes.SpawnPrefab);
-        Array.Copy(intBytes, 0, reflectionBuffer, offset, intBytes.Length);
-        
-        offset += intBytes.Length;
-
+        ClientTest.serializeUShort(reflectionBuffer, (ushort)NetOpCodes.SpawnPrefab, ref offset);
+        ClientTest.serializeByte(reflectionBuffer, (byte)component_ids.Length, ref offset);
         // instance id count
-        reflectionBuffer[offset] = (byte)component_ids.Length;
-        offset++;
-
         for(int i = 0; i < component_ids.Length; ++i)
         {
-            byte[] instIdRaw = BitConverter.GetBytes(component_ids[i]);
-            Array.Copy(instIdRaw, 0, reflectionBuffer, offset, instIdRaw.Length);
-            offset += instIdRaw.Length;
+            ClientTest.serializeInt(reflectionBuffer, component_ids[i], ref offset);
         }
 
-        // path string length
-        byte[] lengthBytes = BitConverter.GetBytes((ushort)path.Length);
-        Array.Copy(lengthBytes, 0, reflectionBuffer, offset, lengthBytes.Length);
-        offset += lengthBytes.Length;
-
-        // path string
-        byte[] stringBytes = Encoding.ASCII.GetBytes(path);
-        Array.Copy(stringBytes, 0, reflectionBuffer, offset, stringBytes.Length);
-        offset += stringBytes.Length;
+        ClientTest.serializeString(reflectionBuffer, path, ref offset);
 
         commandCount++;
         refBufIndex = offset;
@@ -177,43 +161,43 @@ public class ServerTest : MonoBehaviour {
     }
     // server calls an RPC on a client.
     public byte callRPCOnClient(GameObject netgo, string methodName, int socketId, int connId, int chnId) {
-        byte error;
+        byte error = 0;
 
-        ushort opcode = (ushort)NetOpCodes.RPCFunc;
-        byte[] intBytes = BitConverter.GetBytes(opcode);
-        Array.Copy(intBytes, 0, buffer, 0, intBytes.Length);
-        int GOInstanceID = netgo.GetInstanceID();
-        int offset = intBytes.Length;
-        byte[] instIdBytes = BitConverter.GetBytes(GOInstanceID);
+        //ushort opcode = (ushort)NetOpCodes.RPCFunc;
+        //byte[] intBytes = BitConverter.GetBytes(opcode);
+        //Array.Copy(intBytes, 0, buffer, 0, intBytes.Length);
+        //int GOInstanceID = netgo.GetInstanceID();
+        //int offset = intBytes.Length;
+        //byte[] instIdBytes = BitConverter.GetBytes(GOInstanceID);
         
-        Array.Copy(instIdBytes, 0, buffer, offset, instIdBytes.Length);
-        offset += instIdBytes.Length;
+        //Array.Copy(instIdBytes, 0, buffer, offset, instIdBytes.Length);
+        //offset += instIdBytes.Length;
 
-        byte[] lengthBytes = BitConverter.GetBytes((ushort)methodName.Length);
-        Array.Copy(lengthBytes, 0, buffer, offset, lengthBytes.Length);
-        offset += lengthBytes.Length;
+        //byte[] lengthBytes = BitConverter.GetBytes((ushort)methodName.Length);
+        //Array.Copy(lengthBytes, 0, buffer, offset, lengthBytes.Length);
+        //offset += lengthBytes.Length;
 
-        byte[] stringBytes = Encoding.ASCII.GetBytes(methodName);
-        Array.Copy(stringBytes, 0, buffer, offset, stringBytes.Length);
-        offset += stringBytes.Length;
+        //byte[] stringBytes = Encoding.ASCII.GetBytes(methodName);
+        //Array.Copy(stringBytes, 0, buffer, offset, stringBytes.Length);
+        //offset += stringBytes.Length;
 
-        NetworkTransport.Send(socketId, connId, chnId, buffer, offset, out error);
+        //NetworkTransport.Send(socketId, connId, chnId, buffer, offset, out error);
         return error;
     }
 
     // decode rpc from client on server
     public void decodeRPC(byte[] src) {
-        ushort opcode = BitConverter.ToUInt16(src, 0);
+        //ushort opcode = BitConverter.ToUInt16(src, 0);
 
-        if (opcode == (ushort)NetOpCodes.RPCFunc) {
-            int serverGOInstId = BitConverter.ToInt32(src, 2);
-            if (ARNetGOs.ContainsKey(serverGOInstId)) {
-                ushort length = BitConverter.ToUInt16(src, 6);
-                string methodName = Encoding.ASCII.GetString(src, 8, length);
-                if (string.IsNullOrEmpty(methodName) == false)
-                    ARNetGOs[serverGOInstId].gameObject.SendMessage(methodName);
-            }
-        }
+        //if (opcode == (ushort)NetOpCodes.RPCFunc) {
+        //    int serverGOInstId = BitConverter.ToInt32(src, 2);
+        //    if (ARNetGOs.ContainsKey(serverGOInstId)) {
+        //        ushort length = BitConverter.ToUInt16(src, 6);
+        //        string methodName = Encoding.ASCII.GetString(src, 8, length);
+        //        if (string.IsNullOrEmpty(methodName) == false)
+        //            ARNetGOs[serverGOInstId].gameObject.SendMessage(methodName);
+        //    }
+        //}
     }
 
     private void OnDestroy() {
@@ -313,64 +297,42 @@ public class ServerTest : MonoBehaviour {
     public void rflcAddInt(int component_id, ushort offsetId, int intVal)
     {
         // netopcode, ushort
-        byte[] op_code_bytes = BitConverter.GetBytes((ushort)NetOpCodes.Replication);
-        Array.Copy(op_code_bytes, 0, reflectionBuffer, refBufIndex, 2);
-        refBufIndex += 2;
+        ClientTest.serializeUShort(reflectionBuffer, (ushort)NetOpCodes.Replication, ref refBufIndex);
 
         // variable type, byte
-        reflectionBuffer[refBufIndex] = RepItem.RepInt;
-        refBufIndex++;
+        ClientTest.serializeByte(reflectionBuffer, RepItem.RepInt, ref refBufIndex);
 
         // total length, ushort
-        byte[] length_bytes = BitConverter.GetBytes((ushort)10);
-        Array.Copy(length_bytes, 0, reflectionBuffer, refBufIndex, 2);
-        refBufIndex += 2;
+        ClientTest.serializeUShort(reflectionBuffer, 10, ref refBufIndex);
 
         // component id, int
-        byte[] component_id_bytes = BitConverter.GetBytes(component_id);
-        Array.Copy(component_id_bytes, 0, reflectionBuffer, refBufIndex, 4);
-        refBufIndex += 4;
+        ClientTest.serializeInt(reflectionBuffer, component_id, ref refBufIndex);
 
         // offset id, variable id, ushort
-        byte[] offset_id_bytes = BitConverter.GetBytes(offsetId);
-        Array.Copy(offset_id_bytes, 0, reflectionBuffer, refBufIndex, 2);
-        refBufIndex += 2;
-        
-        // int value
-        byte[] intBytes = BitConverter.GetBytes(intVal);
-        Array.Copy(intBytes, 0, reflectionBuffer, refBufIndex, 4);
-        refBufIndex += 4;
+        ClientTest.serializeUShort(reflectionBuffer, offsetId, ref refBufIndex);
 
+        // int value
+        ClientTest.serializeInt(reflectionBuffer, intVal, ref refBufIndex);
         commandCount++;
     }
 
-    public void rflcAddFloat(int goid, ushort offsetId, float floatVal)
+    public void rflcAddFloat(int component_id, ushort offsetId, float floatVal)
     {
         // netopcode, ushort
-        byte[] op_code_bytes = BitConverter.GetBytes((ushort)NetOpCodes.Replication);
-        Array.Copy(op_code_bytes, 0, reflectionBuffer, refBufIndex, 2);
-        refBufIndex += 2;
+        ClientTest.serializeUShort(reflectionBuffer, (ushort)NetOpCodes.Replication, ref refBufIndex);
 
         // variable type, byte
-        reflectionBuffer[refBufIndex] = RepItem.RepFloat;
-        refBufIndex++;
+        ClientTest.serializeByte(reflectionBuffer, RepItem.RepInt, ref refBufIndex);
 
         // total length, ushort
-        byte[] length_bytes = BitConverter.GetBytes((ushort)10);
-        Array.Copy(length_bytes, 0, reflectionBuffer, refBufIndex, 2);
-        refBufIndex += 2;
+        ClientTest.serializeUShort(reflectionBuffer, 10, ref refBufIndex);
 
-        byte[] component_id_bytes = BitConverter.GetBytes(goid);
-        Array.Copy(component_id_bytes, 0, reflectionBuffer, refBufIndex, 4);
-        refBufIndex += 4;
+        // component id, int
+        ClientTest.serializeInt(reflectionBuffer, component_id, ref refBufIndex);
 
-        byte[] offset_id_bytes = BitConverter.GetBytes(offsetId);
-        Array.Copy(offset_id_bytes, 0, reflectionBuffer, refBufIndex, 2);
-        refBufIndex += 2;
-
-        byte[] floatBytes = BitConverter.GetBytes(floatVal);
-        Array.Copy(floatBytes, 0, reflectionBuffer, refBufIndex, 4);
-        refBufIndex += 4;
+        // offset id, variable id, ushort
+        ClientTest.serializeUShort(reflectionBuffer, offsetId, ref refBufIndex);
+        ClientTest.serializeFloat(reflectionBuffer, floatVal, ref refBufIndex);
 
         commandCount++;
     }
@@ -380,8 +342,8 @@ public class ServerTest : MonoBehaviour {
     {
         if (commandCount == 0) return;
 
-        byte[] command_count_bytes = BitConverter.GetBytes(commandCount);
-        Array.Copy(command_count_bytes, 0, reflectionBuffer, 0, 4);
+        int tmpOffset = 0;
+        ClientTest.serializeInt(reflectionBuffer, commandCount, ref tmpOffset);
 
         byte error = 0;
         for (int i = 0; i < playerStates.Count; ++i)
