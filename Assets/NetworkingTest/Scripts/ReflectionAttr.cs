@@ -17,7 +17,7 @@ public enum SyncModes
 public class Replicated : Attribute
 {
     int syncMode;
-    string onRepFunc;
+    //string onRepFunc;
 
     public virtual SyncModes Mode
     {
@@ -25,15 +25,16 @@ public class Replicated : Attribute
         set { syncMode = (int)value; }
     }
 
-    public virtual string OnRep
-    {
-        get { return onRepFunc; }
-        set { onRepFunc = (string)value; }
-    }
+    //public virtual string OnRep
+    //{
+    //    get { return onRepFunc; }
+    //    set { onRepFunc = (string)value; }
+    //}
 }
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 public class OnRep : Attribute
 {
+    public string forVar;
 }
 [AttributeUsage(AttributeTargets.Method, Inherited = false)]
 public class RPC : Attribute
