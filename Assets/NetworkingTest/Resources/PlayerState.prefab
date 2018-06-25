@@ -53,5 +53,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   alwaysRelevant: 1
   owner: -1
+  characterPrefabPath: character
   testVal: 0
   testFloat: 0

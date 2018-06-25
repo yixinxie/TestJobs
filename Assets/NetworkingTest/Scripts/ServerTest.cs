@@ -28,15 +28,13 @@ public class ServerTest : MonoBehaviour {
     int socketId;
     int reliableCHN;
     int unreliableCHN;
-    byte[] recBuffer;
+    byte[] recvBuffer;
     List<int> playerStates;
     public string PlayerStatePrefabPath;
     Dictionary<int, ReplicatedProperties> ARNetGOs; // instance id, game object
     Dictionary<int, List<RepStates>> NetGOByOwners; // player controller(connection) id, owned NetGOs.
 
-    byte[] buffer;
-
-    byte[] reflectionBuffer;
+    byte[] sendBuffer;
     int refBufIndex;
     int commandCount;
 
@@ -58,9 +56,8 @@ public class ServerTest : MonoBehaviour {
         HostTopology topology = new HostTopology(config, 10); // max connections
         socketId = NetworkTransport.AddHost(topology, serverPort);
         Debug.Log("Socket Open. SocketId is: " + socketId);
-        reflectionBuffer = new byte[1024];
-        buffer = new byte[1024];
-        recBuffer = new byte[1024];
+        sendBuffer = new byte[1024];
+        recvBuffer = new byte[1024];
         playerStates = new List<int>(8);
         ARNetGOs = new Dictionary<int, ReplicatedProperties>();
         repItems = new List<RepItem>();
@@ -84,20 +81,17 @@ public class ServerTest : MonoBehaviour {
 
     public void spawnReplicatedGameObject(int connId, string path) {
         int[] goid;
-        byte[] order_ids;
-        GameObject pcgo = spawnPrefabOnServer(connId, path, out goid, out order_ids);
-        spawnNetGameObject2(goid, PlayerStatePrefabPath);
+        GameObject pcgo = spawnPrefabOnServer(connId, path, out goid);
+        spawnNetGameObject2(goid, path);
         repPropertyComponents(pcgo);
     }
-    public GameObject spawnPrefabOnServer(int connId, string prefabPath, out int[] comp_ids, out byte[] order_ids)
+    public GameObject spawnPrefabOnServer(int connId, string prefabPath, out int[] comp_ids)
     {
         // first create it on the server.
         UnityEngine.Object netGO = Resources.Load(prefabPath);
         GameObject newNetGO = GameObject.Instantiate(netGO) as GameObject;
-        //ReplicatedProperties_PlayerController repProps = newNetGO.GetComponent<ReplicatedProperties>() as ReplicatedProperties_PlayerController;
         ReplicatedProperties[] repComponents = newNetGO.GetComponents<ReplicatedProperties>();
         comp_ids = new int[repComponents.Length];
-        order_ids = new byte[repComponents.Length];
         for (int i = 0; i < repComponents.Length; ++i)
         {
             comp_ids[i] = repComponents[i].GetInstanceID();
@@ -120,15 +114,15 @@ public class ServerTest : MonoBehaviour {
     {
         int offset = refBufIndex;
         // 2    1   4x?   2     ?
-        ClientTest.serializeUShort(reflectionBuffer, (ushort)NetOpCodes.SpawnPrefab, ref offset);
-        ClientTest.serializeByte(reflectionBuffer, (byte)component_ids.Length, ref offset);
+        ClientTest.serializeUShort(sendBuffer, (ushort)NetOpCodes.SpawnPrefab, ref offset);
+        ClientTest.serializeByte(sendBuffer, (byte)component_ids.Length, ref offset);
         // instance id count
         for(int i = 0; i < component_ids.Length; ++i)
         {
-            ClientTest.serializeInt(reflectionBuffer, component_ids[i], ref offset);
+            ClientTest.serializeInt(sendBuffer, component_ids[i], ref offset);
         }
 
-        ClientTest.serializeString(reflectionBuffer, path, ref offset);
+        ClientTest.serializeString(sendBuffer, path, ref offset);
 
         commandCount++;
         refBufIndex = offset;
@@ -215,7 +209,7 @@ public class ServerTest : MonoBehaviour {
         int dataSize;
         byte error;
         for (int i = 0; i < 10 && loop; ++i) {
-            NetworkEventType recData = NetworkTransport.Receive(out recHostId, out recConnectionId, out channelId, recBuffer, bufferSize, out dataSize, out error);
+            NetworkEventType recData = NetworkTransport.Receive(out recHostId, out recConnectionId, out channelId, recvBuffer, bufferSize, out dataSize, out error);
             switch (recData) {
                 case NetworkEventType.Nothing:         //1
                     loop = false;
@@ -224,16 +218,13 @@ public class ServerTest : MonoBehaviour {
                     // create player controller
                     Debug.Log("socket id " + recHostId + ", conn " + recConnectionId + ", channel " + channelId);
                     playerStates.Add(recConnectionId);
-                    int[] goid;
-                    byte[] order_ids;
-                    GameObject pcgo = spawnPrefabOnServer(recConnectionId, PlayerStatePrefabPath, out goid, out order_ids);
-                    spawnNetGameObject2(goid, PlayerStatePrefabPath);
-                    repPropertyComponents(pcgo);
+                    
+                    spawnReplicatedGameObject(recConnectionId, PlayerStatePrefabPath);
                     break;
                 case NetworkEventType.DataEvent:       //3
                     Debug.Log(recData.ToString());
 
-                    Stream stream = new MemoryStream(recBuffer);
+                    Stream stream = new MemoryStream(recvBuffer);
                     BinaryFormatter formatter = new BinaryFormatter();
                     string message = formatter.Deserialize(stream) as string;
                     Debug.Log("incoming message event received: " + message);
@@ -249,14 +240,13 @@ public class ServerTest : MonoBehaviour {
             }
         }
 
-        //replicateToClients();
-        replicateToClients2();
+        replicateToClients();
     }
     #region ReplicationV2
-    List<byte[]> sepBufferToClients; // separate buffers for each individual client
-    List<int> sepBufferOffsets; // corresponding offsets.
-    byte[] bufferToAll;
-    int offsetToAll;
+    //List<byte[]> sepBufferToClients; // separate buffers for each individual client
+    //List<int> sepBufferOffsets; // corresponding offsets.
+    //byte[] bufferToAll;
+    //int offsetToAll;
     //void addRepGameObject(byte[] inoutBuffer, ref int offset, string path, int instanceId) {
     //    //ushort opcode = RepItem.RepGameObject;
     //    //byte[] intBytes = BitConverter.GetBytes(opcode); // 2 opcode
@@ -287,58 +277,59 @@ public class ServerTest : MonoBehaviour {
     public void rflcAddInt(int component_id, ushort offsetId, int intVal)
     {
         // netopcode, ushort
-        ClientTest.serializeUShort(reflectionBuffer, (ushort)NetOpCodes.Replication, ref refBufIndex);
+        ClientTest.serializeUShort(sendBuffer, (ushort)NetOpCodes.Replication, ref refBufIndex);
 
         // variable type, byte
-        ClientTest.serializeByte(reflectionBuffer, RepItem.RepInt, ref refBufIndex);
+        ClientTest.serializeByte(sendBuffer, RepItem.RepInt, ref refBufIndex);
 
         // total length, ushort
-        ClientTest.serializeUShort(reflectionBuffer, 10, ref refBufIndex);
+        ClientTest.serializeUShort(sendBuffer, 10, ref refBufIndex);
 
         // component id, int
-        ClientTest.serializeInt(reflectionBuffer, component_id, ref refBufIndex);
+        ClientTest.serializeInt(sendBuffer, component_id, ref refBufIndex);
 
         // offset id, variable id, ushort
-        ClientTest.serializeUShort(reflectionBuffer, offsetId, ref refBufIndex);
+        ClientTest.serializeUShort(sendBuffer, offsetId, ref refBufIndex);
 
         // int value
-        ClientTest.serializeInt(reflectionBuffer, intVal, ref refBufIndex);
+        ClientTest.serializeInt(sendBuffer, intVal, ref refBufIndex);
         commandCount++;
     }
 
     public void rflcAddFloat(int component_id, ushort offsetId, float floatVal)
     {
         // netopcode, ushort
-        ClientTest.serializeUShort(reflectionBuffer, (ushort)NetOpCodes.Replication, ref refBufIndex);
+        ClientTest.serializeUShort(sendBuffer, (ushort)NetOpCodes.Replication, ref refBufIndex);
 
         // variable type, byte
-        ClientTest.serializeByte(reflectionBuffer, RepItem.RepInt, ref refBufIndex);
+        ClientTest.serializeByte(sendBuffer, RepItem.RepInt, ref refBufIndex);
 
         // total length, ushort
-        ClientTest.serializeUShort(reflectionBuffer, 10, ref refBufIndex);
+        ClientTest.serializeUShort(sendBuffer, 10, ref refBufIndex);
 
         // component id, int
-        ClientTest.serializeInt(reflectionBuffer, component_id, ref refBufIndex);
+        ClientTest.serializeInt(sendBuffer, component_id, ref refBufIndex);
 
         // offset id, variable id, ushort
-        ClientTest.serializeUShort(reflectionBuffer, offsetId, ref refBufIndex);
-        ClientTest.serializeFloat(reflectionBuffer, floatVal, ref refBufIndex);
+        ClientTest.serializeUShort(sendBuffer, offsetId, ref refBufIndex);
+
+        ClientTest.serializeFloat(sendBuffer, floatVal, ref refBufIndex);
 
         commandCount++;
     }
     #endregion
 
-    void replicateToClients2()
+    void replicateToClients()
     {
         if (commandCount == 0) return;
 
         int tmpOffset = 0;
-        ClientTest.serializeInt(reflectionBuffer, commandCount, ref tmpOffset);
+        ClientTest.serializeInt(sendBuffer, commandCount, ref tmpOffset);
 
         byte error = 0;
         for (int i = 0; i < playerStates.Count; ++i)
         {
-            NetworkTransport.Send(socketId, playerStates[i], reliableCHN, reflectionBuffer, refBufIndex, out error);
+            NetworkTransport.Send(socketId, playerStates[i], reliableCHN, sendBuffer, refBufIndex, out error);
         }
         commandCount = 0;
         refBufIndex = 4;

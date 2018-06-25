@@ -17,8 +17,9 @@ public class ClientTest : MonoBehaviour
     int connectionId;
     int reliableCHN;
     int unreliableCHN;
-    byte[] buffer;
-    byte[] recBuffer;
+    int serverConId;
+    byte[] sendBuffer;
+    byte[] recvBuffer;
     public bool runTest = false;
     Dictionary<int, ReplicatedProperties> NetGOs;
 
@@ -37,31 +38,28 @@ public class ClientTest : MonoBehaviour
         HostTopology topology = new HostTopology(config, 10); // max connections
         socketId = NetworkTransport.AddHost(topology, clientPort);
         Debug.Log("Socket Open. SocketId is: " + socketId);
-        recBuffer = new byte[1024];
+        recvBuffer = new byte[1024];
         NetGOs = new Dictionary<int, ReplicatedProperties>();
-        int bufferSize = 256;
-        buffer = new byte[bufferSize];
-        //repprops = new Dictionary<int, ReplicatedProperties>();
+        int bufferSize = 1024;
+        sendBuffer = new byte[bufferSize];
+
+        rpcSerializationOffset = 2;
     }
 
     private void Start() {
         byte error;
         connectionId = NetworkTransport.Connect(socketId, serverAddr, serverPort, 0, out error);
         Debug.Log("Connected to server. ConnectionId: " + connectionId + " error:" + (int)error);
-        //NetworkTransport.Send(hostId, connectionId, reliableCHN, buffer, bufferLength, out error);
+        
     }
-    //Dictionary<int, ReplicatedProperties> repprops;
-    //int repprop_inc;
-    //public int registerReplicatedProperties(ReplicatedProperties repprop)
-    //{
-    //    int ret = repprop_inc;
-    //    repprops.Add(ret, repprop);
-    //    repprop_inc++;
-    //    return ret;
-    //}
-    public void rpcParamAddInt(int component_id, int rpcId, int intVal)
-    {
-
+    void sendRPCs() {
+        byte error = 0;
+        if (rpcCount == 0) return;
+        int zero = 0;
+        serializeUShort(sendBuffer, (ushort)rpcCount, ref zero);
+        NetworkTransport.Send(serverConId, connectionId, reliableCHN, sendBuffer, rpcSerializationOffset, out error);
+        rpcSerializationOffset = 2;
+        rpcCount = 0;
     }
     public static byte decodeRawData(byte[] src, Dictionary<int, ReplicatedProperties> NetGOByServerInstId) {
         int offset = 0;
@@ -233,12 +231,42 @@ public class ClientTest : MonoBehaviour
         offset += 4;
         return ret;
     }
-
-    public void rpcParamAddInt(int component_id, ushort rpc_id, int intVal)
-    {
+    public const byte RPCMode_None = 0;
+    public const byte RPCMode_ToServer = 1; // 0001
+    public const byte RPCMode_ToClient = 2; // 0010
+    public const byte RPCMode_ToOwner = 4; //  0100
+    public const byte RPCMode_ToRemote = 8; //  1000
+    /** rpc states */
+    byte rpcMode;
+    int component_id;
+    ushort rpcCount;
+    int rpcSerializationOffset;
+    int rpcSerializationLength;
+    public void rpcBegin(int component_id, ushort rpc_id, byte _rpcMode) {
+        rpcMode = _rpcMode;
+        
+        serializeUShort(sendBuffer, (ushort)NetOpCodes.RPCFunc, ref rpcSerializationOffset);
+        serializeInt(sendBuffer, component_id, ref rpcSerializationOffset);
+        rpcSerializationLength = rpcSerializationOffset;
+        serializeUShort(sendBuffer, rpc_id, ref rpcSerializationOffset);
     }
-    public void rpcParamAddFloat(int component_id, ushort rpc_id, float floatVal)
+    public void rpcEnd() {
+        rpcMode = RPCMode_None;
+        serializeUShort(sendBuffer, (ushort)rpcSerializationOffset, ref rpcSerializationLength);
+        rpcCount++;
+    }
+    public void rpcParamAddUShort(ushort ushortVal)
     {
+        serializeUShort(sendBuffer, ushortVal, ref rpcSerializationOffset);
+    }
+
+    public void rpcParamAddInt(int intVal) {
+        serializeInt(sendBuffer, intVal, ref rpcSerializationOffset);
+    }
+
+    public void rpcParamAddFloat(float floatVal)
+    {
+        serializeFloat(sendBuffer, floatVal, ref rpcSerializationOffset);
     }
     private void OnDestroy() {
         byte error;
@@ -259,21 +287,23 @@ public class ClientTest : MonoBehaviour
 
         bool loop = true;
         for (int i = 0; i < 10 && loop; ++i) {
-            NetworkEventType recData = NetworkTransport.Receive(out recHostId, out connectionId, out channelId, recBuffer, bufferSize, out dataSize, out error);
+            NetworkEventType recData = NetworkTransport.Receive(out recHostId, out connectionId, out channelId, recvBuffer, bufferSize, out dataSize, out error);
             switch (recData) {
                 case NetworkEventType.Nothing:         //1
                     loop = false;
                     break;
                 case NetworkEventType.ConnectEvent:    //2
+                    serverConId = recHostId;
                     Debug.Log(recData.ToString());
                     break;
                 case NetworkEventType.DataEvent:       //3
-                    decodeRawData(recBuffer, NetGOs);
+                    decodeRawData(recvBuffer, NetGOs);
                     break;
                 case NetworkEventType.DisconnectEvent: //4
                     Debug.Log(recData.ToString());
                     break;
             }
         }
+        sendRPCs();
     }
 }

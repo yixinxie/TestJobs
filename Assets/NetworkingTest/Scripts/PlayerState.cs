@@ -11,9 +11,9 @@ public partial class PlayerState : ReplicatedProperties {
     [Replicated]
     public float testFloat;
     // onrep callbacks
-    private void Awake()
-    {
-        initNetworking();
+    /** call this in Awake() */
+    protected override void Awake() {
+        base.Awake();
     }
     [OnRep(forVar = "testFloat2")]
     private void testFloatChanged(float oldfloat) {
@@ -32,7 +32,7 @@ public partial class PlayerState : ReplicatedProperties {
     }
     private void Start() {
         if(ServerTest.self != null) {
-            ServerTest.self.spawnNetGameObject2(null, characterPrefabPath);
+            ServerTest.self.spawnReplicatedGameObject(owner, characterPrefabPath);
         }
     }
 }

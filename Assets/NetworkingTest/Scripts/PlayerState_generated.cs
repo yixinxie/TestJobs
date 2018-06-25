@@ -1,10 +1,5 @@
 
 public partial class PlayerState{
-    /** call this in Awake() */
-    protected override void initNetworking()
-    {
-        base.initNetworking();
-    }
 
     /** variable replication methods(server)*/
     
@@ -43,16 +38,20 @@ public partial class PlayerState{
     /** rpc serializers*/
     
     public void Server_testRPC(System.Int32 testint,System.Single testfloat){
-		ClientTest.self.rpcParamAddInt(goId, 0, testint);
-		ClientTest.self.rpcParamAddFloat(goId, 0, testfloat);
+		ClientTest.self.rpcBegin(goId, 0, ClientTest.RPCMode_ToServer);
+		ClientTest.self.rpcParamAddInt(testint);
+		ClientTest.self.rpcParamAddFloat(testfloat);
+		ClientTest.self.rpcEnd();
 
     }
 
 
     public void Server_testRPCtwo(System.Int32 testint,System.Single testfloat,System.Single float2){
-		ClientTest.self.rpcParamAddInt(goId, 1, testint);
-		ClientTest.self.rpcParamAddFloat(goId, 1, testfloat);
-		ClientTest.self.rpcParamAddFloat(goId, 1, float2);
+		ClientTest.self.rpcBegin(goId, 1, ClientTest.RPCMode_ToServer);
+		ClientTest.self.rpcParamAddInt(testint);
+		ClientTest.self.rpcParamAddFloat(testfloat);
+		ClientTest.self.rpcParamAddFloat(float2);
+		ClientTest.self.rpcEnd();
 
     }
 

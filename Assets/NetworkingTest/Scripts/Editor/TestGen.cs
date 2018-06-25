@@ -73,18 +73,21 @@ public class TestGen {
             }
             ins.Replace("%params%", paramText.ToString());
             StringBuilder serializeText = new StringBuilder();
+            serializeText.AppendLine("\t\tClientTest.self.rpcBegin(goId, "+ methodIndex + ", ClientTest.RPCMode_ToServer);");
             for (int j = 0; j < paramInfo.Length; ++j)
             {
                 ParameterInfo pInfo = paramInfo[j];
                 if (pInfo.ParameterType.Equals(typeof(Int32)))
                 {
-                    serializeText.AppendLine("\t\tClientTest.self.rpcParamAddInt(goId, "+ methodIndex + ", " + pInfo.Name + ");");
+                    //serializeText.AppendLine("\t\tClientTest.self.rpcParamAddInt(goId, "+ methodIndex + ", " + pInfo.Name + ");");
+                    serializeText.AppendLine("\t\tClientTest.self.rpcParamAddInt(" + pInfo.Name + ");");
                 }
                 else if (pInfo.ParameterType.Equals(typeof(Single)))
                 {
-                    serializeText.AppendLine("\t\tClientTest.self.rpcParamAddFloat(goId, " + methodIndex + ", " + pInfo.Name + ");");
+                    serializeText.AppendLine("\t\tClientTest.self.rpcParamAddFloat(" + pInfo.Name + ");");
                 }
             }
+            serializeText.AppendLine("\t\tClientTest.self.rpcEnd();");
             ins.Replace("%body%", serializeText.ToString());
 
             ret.AppendLine(ins.ToString());
@@ -142,11 +145,6 @@ public class TestGen {
 
     static string csClassTmpl = @"
 public partial class %name%{
-    /** call this in Awake() */
-    protected override void initNetworking()
-    {
-        base.initNetworking();
-    }
 
     /** variable replication methods(server)*/
     %rep_body%

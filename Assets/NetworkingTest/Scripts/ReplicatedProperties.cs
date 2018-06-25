@@ -1,11 +1,17 @@
 ﻿using UnityEngine;
-
+public enum GameObjectRoles : byte {
+    None, // disconnected
+    SimulatedProxy, // remote client
+    Autonomous, // controlling client
+    Authority, // server
+}
 public class ReplicatedProperties : MonoBehaviour {
-    public bool alwaysRelevant = true;
+    
     public int owner = -1;
     protected int goId;
-    //public byte orderOnGO;
-    protected virtual void initNetworking()
+    public bool alwaysRelevant = true;
+    public GameObjectRoles role;
+    protected virtual void Awake()
     {
         goId = GetInstanceID();
     }

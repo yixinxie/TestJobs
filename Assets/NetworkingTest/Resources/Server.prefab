@@ -51,5 +51,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 695c63f8aaed72c47bb22e8ae3c4ec3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  PlayerControllerPrefabPath: PlayerState
+  PlayerStatePrefabPath: PlayerState
   sendToClient: 0
