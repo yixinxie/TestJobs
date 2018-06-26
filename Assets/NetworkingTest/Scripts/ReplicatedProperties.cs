@@ -28,11 +28,28 @@ public class ReplicatedProperties : MonoBehaviour {
 
     public void rep_owner()
     {
-        ServerTest.self.rflcAddInt(goId, 0, owner);
+        ServerTest.self.repInt(goId, 0, owner, RPCMode_ToOwner| RPCMode_ToRemote);
+    }
+    // called by the server
+    public void clientSetRole() {
+        ClientTest.self.rpcBegin(goId, 0, ClientTest.RPCMode_ToOwner);
+        ClientTest.self.rpcParamAddByte((byte)GameObjectRoles.Autonomous);
+        ClientTest.self.rpcEnd();
+
+        ClientTest.self.rpcBegin(goId, 0, ClientTest.RPCMode_ToRemote);
+        ClientTest.self.rpcParamAddByte((byte)GameObjectRoles.SimulatedProxy);
+        ClientTest.self.rpcEnd();
     }
 
     public virtual bool rpcReceive(ushort rpc_id, byte[] src, ref int offset)
     {
-        return false;
+        bool ret = false;
+        switch (rpc_id) {
+            case 0:
+                role = (GameObjectRoles)ClientTest.deserializeToInt(src, ref offset);
+                ret = true;
+                break;
+        }
+        return ret;
     }
 }

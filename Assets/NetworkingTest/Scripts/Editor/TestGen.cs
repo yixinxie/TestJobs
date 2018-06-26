@@ -56,11 +56,20 @@ public class TestGen {
         MethodInfo[] methodInfo = thisType.GetMethods(flags);
         StringBuilder ret = new StringBuilder();
         StringBuilder switchSB = new StringBuilder();
-        int methodIndex = 0;
+        int methodIndex = 64;
         for (int i = 0; i < methodInfo.Length; ++i)
         {
             RPC[] attributes = methodInfo[i].GetCustomAttributes(typeof(RPC), true) as RPC[];
             if (attributes == null || attributes.Length == 0) continue;
+            string rpcAPI, rpcMode;
+            if (attributes[0].isServer == 1) {
+                rpcAPI = "ClientTest.self";
+                rpcMode = "ClientTest.RPCMode_ToServer";
+            }
+            else {
+                rpcAPI = "ServerTest.self";
+                rpcMode = "ClientTest.RPCMode_ToClient";
+            }
             StringBuilder ins = new StringBuilder(rpc_tmpl);
             ins.Replace("%func%", methodInfo[i].Name);
             ParameterInfo[] paramInfo = methodInfo[i].GetParameters();
@@ -73,7 +82,7 @@ public class TestGen {
             }
             ins.Replace("%params%", paramText.ToString());
             StringBuilder serializeText = new StringBuilder();
-            serializeText.AppendLine("\t\tClientTest.self.rpcBegin(goId, "+ methodIndex + ", ClientTest.RPCMode_ToServer);");
+            serializeText.AppendLine("\t\tClientTest.self.rpcBegin(goId, "+ methodIndex + ", " + rpcMode + ");");
             for (int j = 0; j < paramInfo.Length; ++j)
             {
                 ParameterInfo pInfo = paramInfo[j];

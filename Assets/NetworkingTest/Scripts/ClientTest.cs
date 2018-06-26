@@ -61,14 +61,14 @@ public class ClientTest : MonoBehaviour
         rpcSerializationOffset = 2;
         rpcCount = 0;
     }
-    public static byte decodeRawData(byte[] src, Dictionary<int, ReplicatedProperties> NetGOByServerInstId) {
+    public static byte decodeRawData(byte[] src, Dictionary<int, ReplicatedProperties> synchronizedComponents) {
         int offset = 0;
         int repItemCount = deserializeToInt(src, ref offset);
         for (int j = 0; j < repItemCount; ++j)
         {
             ushort opcode = deserializeToUShort(src, ref offset);
             if (opcode == (ushort)NetOpCodes.SpawnPrefab)
-            {
+            { // this should not run on server.
                 int id_count = src[offset];
                 offset++;
                 int[] serverInstIds = new int[id_count];
@@ -77,7 +77,7 @@ public class ClientTest : MonoBehaviour
                 for (int i = 0; i < id_count; ++i)
                 {
                     serverInstIds[i] = deserializeToInt(src, ref tmpOffset);
-                    if(NetGOByServerInstId.ContainsKey(serverInstIds[i]))
+                    if(synchronizedComponents.ContainsKey(serverInstIds[i]))
                     {
                         found = true;
                         break;
@@ -95,7 +95,7 @@ public class ClientTest : MonoBehaviour
 
                     for (int i = 0; i < id_count; ++i)
                     {
-                        NetGOByServerInstId.Add(serverInstIds[i], rep_components[i]);
+                        synchronizedComponents.Add(serverInstIds[i], rep_components[i]);
                     }
                 }
                 else
@@ -105,71 +105,41 @@ public class ClientTest : MonoBehaviour
             }
             else if (opcode == (ushort)NetOpCodes.RPCFunc)
             {
-                //int serverGOInstId = BitConverter.ToInt32(src, 2);
-                //if (NetGOByServerInstId.ContainsKey(serverGOInstId)) {
-                //    ushort length = BitConverter.ToUInt16(src, 6);
-                //    string methodName = Encoding.ASCII.GetString(src, 8, length);
-                //    if (string.IsNullOrEmpty(methodName) == false)
-                //        NetGOByServerInstId[serverGOInstId].SendMessage(methodName);
-                //}
+                int component_id = deserializeToInt(src, ref offset);
+                ushort totalLength = deserializeToUShort(src, ref offset);
+                // the number of arguments is inferred by rpc_id
+                if (synchronizedComponents.ContainsKey(component_id)) {
+
+                    ushort rpc_id = deserializeToUShort(src, ref offset);
+                    synchronizedComponents[component_id].rpcReceive(rpc_id, src, ref offset);
+                }
+                else {
+                    offset += totalLength;
+                }
             }
-            else if (opcode == (ushort)NetOpCodes.Replication)
-            {
-                
-                byte dataType = src[offset];
-                offset++;
+            else if (opcode == (ushort)NetOpCodes.Replication) { // this should not run on server.
+
+                // variable type is not needed. it can be inferred from varOffset.
                 ushort totalLength= deserializeToUShort(src, ref offset);
                 int bkLength = offset;
                 int component_id = deserializeToInt(src, ref offset);
                 ushort varOffset = deserializeToUShort(src, ref offset);
 
-                if (dataType == RepItem.RepInt)
+                if (synchronizedComponents.ContainsKey(component_id))
                 {
-                    if (NetGOByServerInstId.ContainsKey(component_id))
+                    ReplicatedProperties propComp = synchronizedComponents[component_id];
+                    if (propComp != null)
                     {
-                        ReplicatedProperties propComp = NetGOByServerInstId[component_id];
-                        if (propComp != null)
-                        {
-                            propComp.stateRepReceive(varOffset, src, ref offset);
-                        }
-                        else {
-                            Debug.Log("the server is trying to replicate a property to a component that no longer exists.");
-                            offset = bkLength + totalLength;
-                        }
+                        propComp.stateRepReceive(varOffset, src, ref offset);
                     }
                     else {
                         Debug.Log("the server is trying to replicate a property to a component that no longer exists.");
                         offset = bkLength + totalLength;
                     }
-                    
                 }
-                else if (dataType == RepItem.RepFloat)
-                {
-                }
-                else if (dataType == RepItem.RepIntArray)
-                {
-                    //int arrayCount = BitConverter.ToInt32(src, offset);
-                    //offset += 4;
-                    //int[] newIntArray = new int[arrayCount];
-                    //for (int j = 0; j < arrayCount; ++j)
-                    //{
-                    //    newIntArray[j] = BitConverter.ToInt32(src, offset);
-                    //    offset += 4;
-                    //}
-
-                    //int goid = BitConverter.ToInt32(src, offset);
-                    //offset += 4;
-                    //int varOffset = BitConverter.ToInt32(src, offset);
-                    //offset += 4;
-
-                    //if (NetGOByServerInstId.ContainsKey(goid))
-                    //{
-                    //    ReplicatedProperties propComp = NetGOByServerInstId[goid];
-                    //    if (propComp != null)
-                    //    {
-                    //        propComp.receive(varOffset, newIntArray);
-                    //    }
-                    //}
+                else {
+                    Debug.Log("the server is trying to replicate a property to a component that no longer exists.");
+                    offset = bkLength + totalLength;
                 }
             }
         }
@@ -233,41 +203,15 @@ public class ClientTest : MonoBehaviour
     }
     public const byte RPCMode_None = 0;
     public const byte RPCMode_ToServer = 1; // 0001
-    public const byte RPCMode_ToClient = 2; // 0010
-    public const byte RPCMode_ToOwner = 4; //  0100
-    public const byte RPCMode_ToRemote = 8; //  1000
+    public const byte RPCMode_ToOwner = 2; //  0010
+    public const byte RPCMode_ToRemote = 4; //  0100
     /** rpc states */
     byte rpcMode;
     int component_id;
     ushort rpcCount;
     int rpcSerializationOffset;
     int rpcSerializationLength;
-    public void rpcBegin(int component_id, ushort rpc_id, byte _rpcMode) {
-        rpcMode = _rpcMode;
-        
-        serializeUShort(sendBuffer, (ushort)NetOpCodes.RPCFunc, ref rpcSerializationOffset);
-        serializeInt(sendBuffer, component_id, ref rpcSerializationOffset);
-        rpcSerializationLength = rpcSerializationOffset;
-        serializeUShort(sendBuffer, rpc_id, ref rpcSerializationOffset);
-    }
-    public void rpcEnd() {
-        rpcMode = RPCMode_None;
-        serializeUShort(sendBuffer, (ushort)rpcSerializationOffset, ref rpcSerializationLength);
-        rpcCount++;
-    }
-    public void rpcParamAddUShort(ushort ushortVal)
-    {
-        serializeUShort(sendBuffer, ushortVal, ref rpcSerializationOffset);
-    }
-
-    public void rpcParamAddInt(int intVal) {
-        serializeInt(sendBuffer, intVal, ref rpcSerializationOffset);
-    }
-
-    public void rpcParamAddFloat(float floatVal)
-    {
-        serializeFloat(sendBuffer, floatVal, ref rpcSerializationOffset);
-    }
+    
     private void OnDestroy() {
         byte error;
         NetworkTransport.Disconnect(socketId, connectionId, out error);
