@@ -25,7 +25,7 @@ public partial class PlayerState : ReplicatedProperties {
 
     }
 
-    [RPC]
+    [RPC(isServer = 0)]
     public void testRPCtwo(int testint, float testfloat, float float2)
     {
 

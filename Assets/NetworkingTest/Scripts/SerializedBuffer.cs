@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using UnityEngine;
 
 public class SerializedBuffer{
     byte[] src;
@@ -8,6 +9,11 @@ public class SerializedBuffer{
     byte rpcMode;
     ushort commandCount;
     int rpcTotalLengthIndex;
+    public SerializedBuffer() {
+        src = new byte[1024];
+        offset = 4;
+
+    }
     public void serializeByte(byte byteVal) {
         src[offset] = byteVal;
         offset++;
@@ -37,6 +43,25 @@ public class SerializedBuffer{
         byte[] stringBytes = Encoding.ASCII.GetBytes(strVal);
         Array.Copy(stringBytes, 0, src, offset, stringBytes.Length);
         offset += stringBytes.Length;
+    }
+    public void serializeVector3(Vector3 vec) {
+        byte[] raw0 = BitConverter.GetBytes(vec.x);
+        byte[] raw1 = BitConverter.GetBytes(vec.y);
+        byte[] raw2 = BitConverter.GetBytes(vec.z);
+        Array.Copy(raw0, 0, src, offset, 4);
+        offset += 4;
+        Array.Copy(raw1, 0, src, offset, 4);
+        offset += 4;
+        Array.Copy(raw2, 0, src, offset, 4);
+        offset += 4;
+    }
+    public void serializeVector2(Vector2 vec) {
+        byte[] raw0 = BitConverter.GetBytes(vec.x);
+        byte[] raw1 = BitConverter.GetBytes(vec.y);
+        Array.Copy(raw0, 0, src, offset, 4);
+        offset += 4;
+        Array.Copy(raw1, 0, src, offset, 4);
+        offset += 4;
     }
 
     #region Replication
@@ -100,28 +125,47 @@ public class SerializedBuffer{
 
         commandCount++;
     }
-    public void rpcParamAddUShort(ushort ushortVal) {
+    public void rpcAddParam(ushort ushortVal) {
         serializeUShort(ushortVal);
     }
 
-    public void rpcParamAddInt(int intVal) {
+    public void rpcAddParam(int intVal) {
         serializeInt(intVal);
     }
 
-    public void rpcParamAddByte(byte byteVal) {
+    public void rpcAddParam(byte byteVal) {
         serializeByte(byteVal);
     }
 
-    public void rpcParamAddFloat(float floatVal) {
+    public void rpcAddParam(float floatVal) {
         serializeFloat(floatVal);
     }
-    #endregion
-    public int seal() {
-        commandCount = 0;
 
-        int length = offset;
+    public void rpcAddMovementTransform(Transform trans) {
+
+    }
+    #endregion
+    public int getCommandCount() {
+        return commandCount;
+    }
+
+    public int getOffset() {
+        return offset;
+    }
+
+    public byte[] getBuffer() {
+        return src;
+    }
+
+    public void seal() {
+        int bkOffset = offset;
         offset = 0;
         serializeInt(commandCount);
-        return length;
+        offset = bkOffset;
+    }
+
+    public void reset() {
+        commandCount = 0;
+        offset = 4;
     }
 }

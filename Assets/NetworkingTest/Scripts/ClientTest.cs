@@ -18,10 +18,11 @@ public class ClientTest : MonoBehaviour
     int reliableCHN;
     int unreliableCHN;
     int serverConId;
-    byte[] sendBuffer;
+    //byte[] sendBuffer;
+    SerializedBuffer sendBuffer;
     byte[] recvBuffer;
     public bool runTest = false;
-    Dictionary<int, ReplicatedProperties> NetGOs;
+    Dictionary<int, ReplicatedProperties> synchronizedComponents;
 
     void Awake () {
         self = this;
@@ -39,28 +40,41 @@ public class ClientTest : MonoBehaviour
         socketId = NetworkTransport.AddHost(topology, clientPort);
         Debug.Log("Socket Open. SocketId is: " + socketId);
         recvBuffer = new byte[1024];
-        NetGOs = new Dictionary<int, ReplicatedProperties>();
-        int bufferSize = 1024;
-        sendBuffer = new byte[bufferSize];
+        synchronizedComponents = new Dictionary<int, ReplicatedProperties>();
+        sendBuffer = new SerializedBuffer();
 
-        rpcSerializationOffset = 2;
     }
 
     private void Start() {
         byte error;
         connectionId = NetworkTransport.Connect(socketId, serverAddr, serverPort, 0, out error);
         Debug.Log("Connected to server. ConnectionId: " + connectionId + " error:" + (int)error);
-        
     }
+
     void sendRPCs() {
         byte error = 0;
-        if (rpcCount == 0) return;
-        int zero = 0;
-        serializeUShort(sendBuffer, (ushort)rpcCount, ref zero);
-        NetworkTransport.Send(serverConId, connectionId, reliableCHN, sendBuffer, rpcSerializationOffset, out error);
-        rpcSerializationOffset = 2;
-        rpcCount = 0;
+        if (sendBuffer.getCommandCount() == 0) return;
+        sendBuffer.seal();
+        NetworkTransport.Send(serverConId, connectionId, reliableCHN, sendBuffer.getBuffer(), sendBuffer.getOffset(), out error);
+        sendBuffer.reset();
     }
+
+    public void rpcBegin(int component_id, ushort rpc_id, byte mode) {
+        sendBuffer.rpcBegin(component_id, rpc_id, mode);
+    }
+    public void rpcEnd() {
+        sendBuffer.rpcEnd();
+    }
+    public void rpcAddParam(byte val) {
+        sendBuffer.rpcAddParam(val);
+    }
+    public void rpcAddParam(int val) {
+        sendBuffer.rpcAddParam(val);
+    }
+    public void rpcAddParam(float val) {
+        sendBuffer.rpcAddParam(val);
+    }
+
     public static byte decodeRawData(byte[] src, Dictionary<int, ReplicatedProperties> synchronizedComponents) {
         int offset = 0;
         int repItemCount = deserializeToInt(src, ref offset);
@@ -145,36 +159,6 @@ public class ClientTest : MonoBehaviour
         }
         return 0;
     }
-    public static void serializeByte(byte[] src, byte byteVal, ref int offset) {
-        src[offset] = byteVal;
-        offset++;
-    }
-    public static void serializeInt(byte[] src, int intVal, ref int offset) {
-        byte[] intRaw = BitConverter.GetBytes(intVal);
-        Array.Copy(intRaw, 0, src, offset, 4);
-        offset += 4;
-    }
-    public static void serializeUShort(byte[] src, ushort ushortVal, ref int offset) {
-        byte[] ushortRaw = BitConverter.GetBytes(ushortVal);
-        Array.Copy(ushortRaw, 0, src, offset, 2);
-        offset += 2;
-    }
-    public static void serializeFloat(byte[] src, float floatVal, ref int offset) {
-        byte[] floatRaw = BitConverter.GetBytes(floatVal);
-        Array.Copy(floatRaw, 0, src, offset, 4);
-        offset += 4;
-    }
-    public static void serializeString(byte[] src, string strVal, ref int offset) {
-        // path string length
-        byte[] lengthBytes = BitConverter.GetBytes((ushort)strVal.Length);
-        Array.Copy(lengthBytes, 0, src, offset, 2);
-        offset += 2;
-
-        // path string
-        byte[] stringBytes = Encoding.ASCII.GetBytes(strVal);
-        Array.Copy(stringBytes, 0, src, offset, stringBytes.Length);
-        offset += stringBytes.Length;
-    }
 
     public static int deserializeToInt(byte[] src, ref int offset)
     {
@@ -201,23 +185,12 @@ public class ClientTest : MonoBehaviour
         offset += 4;
         return ret;
     }
-    public const byte RPCMode_None = 0;
-    public const byte RPCMode_ToServer = 1; // 0001
-    public const byte RPCMode_ToOwner = 2; //  0010
-    public const byte RPCMode_ToRemote = 4; //  0100
-    /** rpc states */
-    byte rpcMode;
-    int component_id;
-    ushort rpcCount;
-    int rpcSerializationOffset;
-    int rpcSerializationLength;
-    
+
     private void OnDestroy() {
         byte error;
         NetworkTransport.Disconnect(socketId, connectionId, out error);
     }
-    // Update is called once per frame
-    void Update () {
+    void FixedUpdate () {
         if (runTest) {
             runTest = false;
         }
@@ -241,7 +214,7 @@ public class ClientTest : MonoBehaviour
                     Debug.Log(recData.ToString());
                     break;
                 case NetworkEventType.DataEvent:       //3
-                    decodeRawData(recvBuffer, NetGOs);
+                    decodeRawData(recvBuffer, synchronizedComponents);
                     break;
                 case NetworkEventType.DisconnectEvent: //4
                     Debug.Log(recData.ToString());

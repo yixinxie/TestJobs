@@ -12,9 +12,20 @@ using UnityEngine;
     void Start () {
 		
 	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
+    [RPC]
+    public void ServerReceiveUpdate(Vector3 pos, Vector3 rot) {
+
+    }
+    public void LateUpdate() {
+        //transform.po
+        if (role == GameObjectRoles.Autonomous || role == GameObjectRoles.None) {
+            //ClientTest.self.r
+        }
+        else if (role == GameObjectRoles.Authority) {
+
+        }
+        else if (role == GameObjectRoles.SimulatedProxy) {
+
+        }
+    }
 }

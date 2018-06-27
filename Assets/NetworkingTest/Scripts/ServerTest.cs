@@ -28,16 +28,18 @@ public class ServerTest : MonoBehaviour {
     int socketId;
     int reliableCHN;
     int unreliableCHN;
-    byte[] recvBuffer;
-    List<int> playerStates;
+    
     public string PlayerStatePrefabPath;
-    Dictionary<int, ReplicatedProperties> synchronizedComponents; // instance id, game object
+
+    byte[] recvBuffer;
+
+    List<int> playerStates;
+    List<byte> playerActiveStates;
+    List<SerializedBuffer> sendBuffers;
+    SerializedBuffer toAllBuffer;
     //Dictionary<int, List<RepStates>> NetGOByOwners; // player controller(connection) id, owned NetGOs.
 
-    byte[] sendBuffer;
-    int refBufIndex;
-    int commandCount;
-
+    Dictionary<int, ReplicatedProperties> synchronizedComponents; // instance id, game object
     void Awake () {
         self = this;
         Application.runInBackground = true;
@@ -53,12 +55,32 @@ public class ServerTest : MonoBehaviour {
         HostTopology topology = new HostTopology(config, 10); // max connections
         socketId = NetworkTransport.AddHost(topology, serverPort);
         Debug.Log("Socket Open. SocketId is: " + socketId);
-        sendBuffer = new byte[1024];
         recvBuffer = new byte[1024];
-        playerStates = new List<int>(8);
-        synchronizedComponents = new Dictionary<int, ReplicatedProperties>();
 
-        refBufIndex = 4;
+        int defaultMaxPlayerCount = 8;
+        playerStates = new List<int>(defaultMaxPlayerCount);
+        
+        playerActiveStates = new List<byte>(defaultMaxPlayerCount);
+        sendBuffers = new List<SerializedBuffer>(defaultMaxPlayerCount);
+
+        for(int i = 0; i < defaultMaxPlayerCount; ++i) {
+            sendBuffers.Add(new SerializedBuffer());
+            playerStates.Add(0);
+            playerActiveStates.Add(0);
+        }
+        toAllBuffer = new SerializedBuffer();
+
+        synchronizedComponents = new Dictionary<int, ReplicatedProperties>();
+    }
+    int getNewPlayerIndex() {
+        for(int i = 0; i < playerActiveStates.Count; ++i) {
+            if(playerActiveStates[i] == 0) {
+                playerActiveStates[i] = 1;
+                return i;
+            }
+        }
+        playerActiveStates.Add(1);
+        return playerActiveStates.Count - 1;
     }
 
     private void Start() {
@@ -67,7 +89,7 @@ public class ServerTest : MonoBehaviour {
     public void spawnReplicatedGameObject(int connId, string path) {
         int[] goid;
         GameObject pcgo = spawnPrefabOnServer(connId, path, out goid);
-        spawnNetGameObject2(goid, path);
+        spawnNetGameObject(goid, path);
         repPropertyComponents(pcgo);
     }
     GameObject spawnPrefabOnServer(int connId, string prefabPath, out int[] comp_ids)
@@ -95,29 +117,20 @@ public class ServerTest : MonoBehaviour {
         }
     }
 
-    void spawnNetGameObjectOnSingleRemote2(int[] component_ids, string path, int connId)
-    {
-        int offset = refBufIndex;
-        // 2    1   4x?   2     ?
-        ClientTest.serializeUShort(sendBuffer, (ushort)NetOpCodes.SpawnPrefab, ref offset);
-        ClientTest.serializeByte(sendBuffer, (byte)component_ids.Length, ref offset);
-        // instance id count
-        for(int i = 0; i < component_ids.Length; ++i)
-        {
-            ClientTest.serializeInt(sendBuffer, component_ids[i], ref offset);
-        }
-
-        ClientTest.serializeString(sendBuffer, path, ref offset);
-
-        commandCount++;
-        refBufIndex = offset;
-    }
-
-    public void spawnNetGameObject2(int[] goid, string path)
+    public void spawnNetGameObject(int[] component_ids, string path)
     {
         for (int i = 0; i < playerStates.Count; ++i)
         {
-            spawnNetGameObjectOnSingleRemote2(goid, path, playerStates[i]);
+            //spawnNetGameObjectOnSingleRemote2(goid, path, playerStates[i]);
+
+            // 2    1   4x?   2     ?
+            toAllBuffer.serializeUShort((ushort)NetOpCodes.SpawnPrefab);
+            toAllBuffer.serializeByte((byte)component_ids.Length);
+            // instance id count
+            for (int j = 0; j < component_ids.Length; ++j) {
+                toAllBuffer.serializeInt(component_ids[j]);
+            }
+            toAllBuffer.serializeString(path);
         }
     }
 
@@ -125,15 +138,13 @@ public class ServerTest : MonoBehaviour {
         //byte error;
         //NetworkTransport.Disconnect(hostId, connectionId, out error);
     }
-    public bool sendToClient = false;
-    void Update () {
-        if (sendToClient) {
-            sendToClient = false;
-            for(int i = 0; i < playerStates.Count; ++i) {
-                //SendSocketMessage(playerControllers[i]);
-                //callRPCOnClient(remotePC, "yay", socketId, playerStates[i], reliableCHN);
-            }
-        }
+    //public bool sendToClient = false;
+    void FixedUpdate() {
+        //if (sendToClient) {
+        //    sendToClient = false;
+        //    for(int i = 0; i < playerStates.Count; ++i) {
+        //    }
+        //}
         bool loop = true;
 
         int recHostId;
@@ -152,9 +163,16 @@ public class ServerTest : MonoBehaviour {
                 case NetworkEventType.ConnectEvent:    //2
                     // create player controller
                     Debug.Log("socket id " + recHostId + ", conn " + recConnectionId + ", channel " + channelId);
-                    playerStates.Add(recConnectionId);
-                    
-                    spawnReplicatedGameObject(recConnectionId, PlayerStatePrefabPath);
+                    int newPlayerIndex = getNewPlayerIndex();
+                    if (newPlayerIndex >= 0) {
+                        playerStates[newPlayerIndex] = recConnectionId;
+
+
+                        spawnReplicatedGameObject(recConnectionId, PlayerStatePrefabPath);
+                    }
+                    else {
+                        Debug.Log("new PlayerState failed to create!");
+                    }
                     break;
                 case NetworkEventType.DataEvent:       //3
                     ClientTest.decodeRawData(recvBuffer, synchronizedComponents);
@@ -168,22 +186,53 @@ public class ServerTest : MonoBehaviour {
                     break;
             }
         }
-
         replicateToClients();
     }
- 
+    public void repVar(int component_id, ushort var_id, int val, byte rep_mode) {
+        toAllBuffer.repInt(component_id, var_id, val);
+    }
+    public void repVar(int component_id, ushort var_id, float val, byte rep_mode) {
+        toAllBuffer.repFloat(component_id, var_id, val);
+    }
+
+    public void rpcBegin(int component_id, ushort rpc_id, byte mode) {
+        toAllBuffer.rpcBegin(component_id, rpc_id, mode);
+    }
+    public void rpcEnd() {
+        toAllBuffer.rpcEnd();
+    }
+    public void rpcAddParam(byte val) {
+        toAllBuffer.rpcAddParam(val);
+    }
+    public void rpcAddParam(int val) {
+        toAllBuffer.rpcAddParam(val);
+    }
+    public void rpcAddParam(float val) {
+        toAllBuffer.rpcAddParam(val);
+    }
+
     void replicateToClients()
     {
-        if (commandCount == 0) return;
-        int tmpOffset = 0;
-        ClientTest.serializeInt(sendBuffer, commandCount, ref tmpOffset);
-
         byte error = 0;
+        // to each
         for (int i = 0; i < playerStates.Count; ++i)
         {
-            NetworkTransport.Send(socketId, playerStates[i], reliableCHN, sendBuffer, refBufIndex, out error);
+            if (playerActiveStates[i] == 1 && sendBuffers[i].getCommandCount() > 0) {
+                sendBuffers[i].seal();
+                NetworkTransport.Send(socketId, playerStates[i], reliableCHN, sendBuffers[i].getBuffer(), sendBuffers[i].getOffset(), out error);
+                sendBuffers[i].reset();
+            }
         }
-        commandCount = 0;
-        refBufIndex = 4;
+        // to all
+        if (toAllBuffer.getCommandCount() > 0) {
+            toAllBuffer.seal();
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerActiveStates[i] == 1) {
+                    // change this to multicast?
+                    NetworkTransport.Send(socketId, playerStates[i], reliableCHN, toAllBuffer.getBuffer(), toAllBuffer.getOffset(), out error);
+                }
+            }
+            toAllBuffer.reset();
+        }
     }
 }

@@ -4,11 +4,11 @@ public partial class PlayerState{
     /** variable replication methods(server)*/
     
     public void rep_testVal() {
-        //ServerTest.self.rflcAddInt(goId, 64, testVal);
+        ServerTest.self.repVar(goId, 64, testVal, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
     }
 
     public void rep_testFloat() {
-        //ServerTest.self.rflcAddFloat(goId, 65, testFloat);
+        ServerTest.self.repVar(goId, 65, testFloat, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
     }
 
 
@@ -37,21 +37,21 @@ public partial class PlayerState{
     
     /** rpc serializers*/
     
-    public void Server_testRPC(System.Int32 testint,System.Single testfloat){
-		//ClientTest.self.rpcBegin(goId, 0, ClientTest.RPCMode_ToServer);
-		//ClientTest.self.rpcParamAddInt(testint);
-		//ClientTest.self.rpcParamAddFloat(testfloat);
-		//ClientTest.self.rpcEnd();
+    public void testRPC_OnServer(System.Int32 testint,System.Single testfloat){
+		ClientTest.self.rpcBegin(goId, 64, SerializedBuffer.RPCMode_ToServer);
+		ClientTest.self.rpcAddParam(testint);
+		ClientTest.self.rpcAddParam(testfloat);
+		ClientTest.self.rpcEnd();
 
     }
 
 
-    public void Server_testRPCtwo(System.Int32 testint,System.Single testfloat,System.Single float2){
-		//ClientTest.self.rpcBegin(goId, 1, ClientTest.RPCMode_ToServer);
-		//ClientTest.self.rpcParamAddInt(testint);
-		//ClientTest.self.rpcParamAddFloat(testfloat);
-		//ClientTest.self.rpcParamAddFloat(float2);
-		//ClientTest.self.rpcEnd();
+    public void testRPCtwo_OnClient(System.Int32 testint,System.Single testfloat,System.Single float2){
+		ServerTest.self.rpcBegin(goId, 65, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
+		ServerTest.self.rpcAddParam(testint);
+		ServerTest.self.rpcAddParam(testfloat);
+		ServerTest.self.rpcAddParam(float2);
+		ServerTest.self.rpcEnd();
 
     }
 
@@ -62,14 +62,14 @@ public partial class PlayerState{
         if(base.rpcReceive(rpc_id, src, ref offset)) return true;
         switch(rpc_id){
             
-            case 0:
+            case 64:
             {
                 System.Int32 testint = ClientTest.deserializeToInt(src, ref offset);System.Single testfloat = ClientTest.deserializeToFloat(src, ref offset);testRPC(testint, testfloat);
             }
             break;
 
 
-            case 1:
+            case 65:
             {
                 System.Int32 testint = ClientTest.deserializeToInt(src, ref offset);System.Single testfloat = ClientTest.deserializeToFloat(src, ref offset);System.Single float2 = ClientTest.deserializeToFloat(src, ref offset);testRPCtwo(testint, testfloat, float2);
             }

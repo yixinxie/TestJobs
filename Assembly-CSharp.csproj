@@ -78,7 +78,6 @@
     <Compile Include="Assets\NetworkingTest\Scripts\ReplicatedProperties.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\SerializedBuffer.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\ServerTest.cs" />
-    <None Include="Assets\NetworkingTest\Scripts\New UXML.uxml" />
     <Reference Include="UnityEditor.StandardEvents">
       <HintPath>E:/TestJobs/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
     </Reference>

@@ -37,8 +37,13 @@ public class TestGen {
             Debug.Log("generated code for " + thisType.ToString());
         }
     }
-    static string rpc_tmpl = @"
-    public void Server_%func%(%params%){
+    static string rpc_tmpServer = @"
+    public void %func%_OnServer(%params%){
+%body%
+    }
+";
+    static string rpc_tmpClient = @"
+    public void %func%_OnClient(%params%){
 %body%
     }
 ";
@@ -62,15 +67,18 @@ public class TestGen {
             RPC[] attributes = methodInfo[i].GetCustomAttributes(typeof(RPC), true) as RPC[];
             if (attributes == null || attributes.Length == 0) continue;
             string rpcAPI, rpcMode;
+            StringBuilder ins;
             if (attributes[0].isServer == 1) {
                 rpcAPI = "ClientTest.self";
-                rpcMode = "ClientTest.RPCMode_ToServer";
+                rpcMode = "SerializedBuffer.RPCMode_ToServer";
+                ins = new StringBuilder(rpc_tmpServer);
             }
             else {
                 rpcAPI = "ServerTest.self";
-                rpcMode = "ClientTest.RPCMode_ToClient";
+                rpcMode = "SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote";
+                ins = new StringBuilder(rpc_tmpClient);
             }
-            StringBuilder ins = new StringBuilder(rpc_tmpl);
+             
             ins.Replace("%func%", methodInfo[i].Name);
             ParameterInfo[] paramInfo = methodInfo[i].GetParameters();
             StringBuilder paramText = new StringBuilder();
@@ -82,21 +90,16 @@ public class TestGen {
             }
             ins.Replace("%params%", paramText.ToString());
             StringBuilder serializeText = new StringBuilder();
-            serializeText.AppendLine("\t\tClientTest.self.rpcBegin(goId, "+ methodIndex + ", " + rpcMode + ");");
+            serializeText.AppendLine("\t\t" + rpcAPI + ".rpcBegin(goId, " + methodIndex + ", " + rpcMode + ");");
             for (int j = 0; j < paramInfo.Length; ++j)
             {
                 ParameterInfo pInfo = paramInfo[j];
-                if (pInfo.ParameterType.Equals(typeof(Int32)))
+                if (pInfo.ParameterType.Equals(typeof(Int32)) || pInfo.ParameterType.Equals(typeof(Single)))
                 {
-                    //serializeText.AppendLine("\t\tClientTest.self.rpcParamAddInt(goId, "+ methodIndex + ", " + pInfo.Name + ");");
-                    serializeText.AppendLine("\t\tClientTest.self.rpcParamAddInt(" + pInfo.Name + ");");
-                }
-                else if (pInfo.ParameterType.Equals(typeof(Single)))
-                {
-                    serializeText.AppendLine("\t\tClientTest.self.rpcParamAddFloat(" + pInfo.Name + ");");
+                    serializeText.AppendLine("\t\t" + rpcAPI + ".rpcAddParam(" + pInfo.Name + ");");
                 }
             }
-            serializeText.AppendLine("\t\tClientTest.self.rpcEnd();");
+            serializeText.AppendLine("\t\t" + rpcAPI + ".rpcEnd();");
             ins.Replace("%body%", serializeText.ToString());
 
             ret.AppendLine(ins.ToString());
@@ -200,12 +203,12 @@ public partial class %name%{
 
     static string repIntTmpl = @"
     public void rep_%var%() {
-        ServerTest.self.rflcAddInt(goId, %offset%, %var%);
+        ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
     }
 ";
     static string repFloatTmpl = @"
     public void rep_%var%() {
-        ServerTest.self.rflcAddFloat(goId, %offset%, %var%);
+        ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
     }
 ";
 

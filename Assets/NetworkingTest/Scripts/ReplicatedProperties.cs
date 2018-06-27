@@ -28,17 +28,17 @@ public class ReplicatedProperties : MonoBehaviour {
 
     public void rep_owner()
     {
-        ServerTest.self.repInt(goId, 0, owner, RPCMode_ToOwner| RPCMode_ToRemote);
+        ServerTest.self.repVar(goId, 0, owner, SerializedBuffer.RPCMode_ToOwner| SerializedBuffer.RPCMode_ToRemote);
     }
     // called by the server
     public void clientSetRole() {
-        ClientTest.self.rpcBegin(goId, 0, ClientTest.RPCMode_ToOwner);
-        ClientTest.self.rpcParamAddByte((byte)GameObjectRoles.Autonomous);
-        ClientTest.self.rpcEnd();
+        ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ToOwner);
+        ServerTest.self.rpcAddParam((byte)GameObjectRoles.Autonomous);
+        ServerTest.self.rpcEnd();
 
-        ClientTest.self.rpcBegin(goId, 0, ClientTest.RPCMode_ToRemote);
-        ClientTest.self.rpcParamAddByte((byte)GameObjectRoles.SimulatedProxy);
-        ClientTest.self.rpcEnd();
+        ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ToRemote);
+        ServerTest.self.rpcAddParam((byte)GameObjectRoles.SimulatedProxy);
+        ServerTest.self.rpcEnd();
     }
 
     public virtual bool rpcReceive(ushort rpc_id, byte[] src, ref int offset)
