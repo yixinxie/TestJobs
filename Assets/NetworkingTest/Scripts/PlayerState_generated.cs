@@ -47,7 +47,7 @@ public partial class PlayerState{
 
 
     public void testRPCtwo_OnClient(System.Int32 testint,System.Single testfloat,System.Single float2){
-		ServerTest.self.rpcBegin(goId, 65, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
+		ServerTest.self.rpcBegin(goId, 65, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote, owner);
 		ServerTest.self.rpcAddParam(testint);
 		ServerTest.self.rpcAddParam(testfloat);
 		ServerTest.self.rpcAddParam(float2);

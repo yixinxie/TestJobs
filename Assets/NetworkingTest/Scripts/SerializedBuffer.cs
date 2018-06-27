@@ -44,6 +44,7 @@ public class SerializedBuffer{
         Array.Copy(stringBytes, 0, src, offset, stringBytes.Length);
         offset += stringBytes.Length;
     }
+
     public void serializeVector3(Vector3 vec) {
         byte[] raw0 = BitConverter.GetBytes(vec.x);
         byte[] raw1 = BitConverter.GetBytes(vec.y);
@@ -139,6 +140,10 @@ public class SerializedBuffer{
 
     public void rpcAddParam(float floatVal) {
         serializeFloat(floatVal);
+    }
+
+    public void rpcAddParam(Vector3 val) {
+        serializeVector3(val);
     }
 
     public void rpcAddMovementTransform(Transform trans) {

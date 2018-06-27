@@ -90,7 +90,7 @@ public class TestGen {
             }
             ins.Replace("%params%", paramText.ToString());
             StringBuilder serializeText = new StringBuilder();
-            serializeText.AppendLine("\t\t" + rpcAPI + ".rpcBegin(goId, " + methodIndex + ", " + rpcMode + ");");
+            serializeText.AppendLine("\t\t" + rpcAPI + ".rpcBegin(goId, " + methodIndex + ", " + rpcMode + ", owner);");
             for (int j = 0; j < paramInfo.Length; ++j)
             {
                 ParameterInfo pInfo = paramInfo[j];

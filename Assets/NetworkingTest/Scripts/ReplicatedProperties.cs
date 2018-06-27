@@ -4,13 +4,14 @@ public enum GameObjectRoles : byte {
     SimulatedProxy, // remote client
     Autonomous, // controlling client
     Authority, // server
+    Undefined = 255,
 }
 public class ReplicatedProperties : MonoBehaviour {
     
     public int owner = -1;
     protected int goId;
     public bool alwaysRelevant = true;
-    public GameObjectRoles role;
+    public GameObjectRoles role = GameObjectRoles.Undefined;
     protected virtual void Awake()
     {
         goId = GetInstanceID();
@@ -32,11 +33,12 @@ public class ReplicatedProperties : MonoBehaviour {
     }
     // called by the server
     public void clientSetRole() {
-        ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ToOwner);
+        role = GameObjectRoles.Authority;
+        ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ToOwner, owner);
         ServerTest.self.rpcAddParam((byte)GameObjectRoles.Autonomous);
         ServerTest.self.rpcEnd();
 
-        ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ToRemote);
+        ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ToRemote, owner);
         ServerTest.self.rpcAddParam((byte)GameObjectRoles.SimulatedProxy);
         ServerTest.self.rpcEnd();
     }
@@ -46,6 +48,7 @@ public class ReplicatedProperties : MonoBehaviour {
         bool ret = false;
         switch (rpc_id) {
             case 0:
+                Debug.Log("clientSetRole!");
                 role = (GameObjectRoles)ClientTest.deserializeToInt(src, ref offset);
                 ret = true;
                 break;

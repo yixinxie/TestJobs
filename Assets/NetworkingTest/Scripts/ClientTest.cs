@@ -74,6 +74,9 @@ public class ClientTest : MonoBehaviour
     public void rpcAddParam(float val) {
         sendBuffer.rpcAddParam(val);
     }
+    public void rpcAddParam(Vector3 val) {
+        sendBuffer.rpcAddParam(val);
+    }
 
     public static byte decodeRawData(byte[] src, Dictionary<int, ReplicatedProperties> synchronizedComponents) {
         int offset = 0;

@@ -12,14 +12,18 @@ using UnityEngine;
     void Start () {
 		
 	}
-    [RPC]
-    public void ServerReceiveUpdate(Vector3 pos, Vector3 rot) {
-
+    [RPC(isServer =1)]
+    public void ReceiveUpdate(Vector3 pos, Vector3 rot) {
+        transform.position = pos;
+        transform.eulerAngles = rot;
     }
     public void LateUpdate() {
         //transform.po
         if (role == GameObjectRoles.Autonomous || role == GameObjectRoles.None) {
-            //ClientTest.self.r
+            ClientTest.self.rpcBegin(goId, 16, SerializedBuffer.RPCMode_ToServer);
+            ClientTest.self.rpcAddParam(transform.position);
+            ClientTest.self.rpcAddParam(transform.eulerAngles);
+            ClientTest.self.rpcEnd();
         }
         else if (role == GameObjectRoles.Authority) {
 

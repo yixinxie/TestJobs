@@ -114,6 +114,7 @@ public class ServerTest : MonoBehaviour {
         for (int i = 0; i < repComponents.Length; ++i)
         {
             repComponents[i].rep_owner();
+            repComponents[i].clientSetRole();
         }
     }
 
@@ -194,21 +195,117 @@ public class ServerTest : MonoBehaviour {
     public void repVar(int component_id, ushort var_id, float val, byte rep_mode) {
         toAllBuffer.repFloat(component_id, var_id, val);
     }
-
-    public void rpcBegin(int component_id, ushort rpc_id, byte mode) {
-        toAllBuffer.rpcBegin(component_id, rpc_id, mode);
+    byte rpcSessionMode;
+    int rpcSessionOwner;
+    public void rpcBegin(int component_id, ushort rpc_id, byte mode, int owner_id) {
+        rpcSessionMode = mode;
+        rpcSessionOwner = owner_id;
+        if ((rpcSessionMode & (SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote)) > 0) {
+            toAllBuffer.rpcBegin(component_id, rpc_id, mode);
+        }
+        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner ) > 0) {
+            for(int i = 0; i < playerStates.Count; ++i) {
+                if(playerStates[i] == rpcSessionOwner) {
+                    sendBuffers[i].rpcBegin(component_id, rpc_id, mode);
+                    break;
+                }
+            }
+        }
+        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToRemote) > 0) {
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerStates[i] != rpcSessionOwner) {
+                    sendBuffers[i].rpcBegin(component_id, rpc_id, mode);
+                    break;
+                }
+            }
+        }
     }
     public void rpcEnd() {
-        toAllBuffer.rpcEnd();
+        if ((rpcSessionMode & (SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote)) > 0) {
+            toAllBuffer.rpcEnd();
+        }
+        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerStates[i] == rpcSessionOwner) {
+                    sendBuffers[i].rpcEnd();
+                    break;
+                }
+            }
+        }
+        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToRemote) > 0) {
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerStates[i] != rpcSessionOwner) {
+                    sendBuffers[i].rpcEnd();
+                    break;
+                }
+            }
+        }
     }
     public void rpcAddParam(byte val) {
-        toAllBuffer.rpcAddParam(val);
+        
+        if ((rpcSessionMode & (SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote)) > 0) {
+            toAllBuffer.rpcAddParam(val);
+        }
+        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerStates[i] == rpcSessionOwner) {
+                    sendBuffers[i].rpcAddParam(val);
+                    break;
+                }
+            }
+        }
+        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToRemote) > 0) {
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerStates[i] != rpcSessionOwner) {
+                    sendBuffers[i].rpcAddParam(val);
+                    break;
+                }
+            }
+        }
     }
     public void rpcAddParam(int val) {
         toAllBuffer.rpcAddParam(val);
+        if ((rpcSessionMode & (SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote)) > 0) {
+            toAllBuffer.rpcAddParam(val);
+        }
+        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerStates[i] == rpcSessionOwner) {
+                    sendBuffers[i].rpcAddParam(val);
+                    break;
+                }
+            }
+        }
+        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToRemote) > 0) {
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerStates[i] != rpcSessionOwner) {
+                    sendBuffers[i].rpcAddParam(val);
+                    break;
+                }
+            }
+        }
     }
     public void rpcAddParam(float val) {
         toAllBuffer.rpcAddParam(val);
+        if ((rpcSessionMode & (SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote)) > 0) {
+            toAllBuffer.rpcAddParam(val);
+        }
+        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerStates[i] == rpcSessionOwner) {
+                    sendBuffers[i].rpcAddParam(val);
+                    break;
+                }
+            }
+        }
+        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToRemote) > 0) {
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerStates[i] != rpcSessionOwner) {
+                    sendBuffers[i].rpcAddParam(val);
+                    break;
+                }
+            }
+        }
     }
 
     void replicateToClients()
