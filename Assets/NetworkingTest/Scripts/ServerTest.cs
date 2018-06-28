@@ -11,7 +11,7 @@ enum NetOpCodes : ushort {
     ServerTerminate,
     SpawnPrefab, // string, replicate a prefab from server to clients.
     RPCFunc, // rpc
-    Replication, // replication
+    Replication, // replication of variable
 }
 public struct RepStates {
     public ReplicatedProperties repGO;
@@ -34,9 +34,7 @@ public class ServerTest : MonoBehaviour {
     byte[] recvBuffer;
 
     List<int> playerStates;
-    List<byte> playerActiveStates;
     List<SerializedBuffer> sendBuffers;
-    SerializedBuffer toAllBuffer;
     //Dictionary<int, List<RepStates>> NetGOByOwners; // player controller(connection) id, owned NetGOs.
 
     Dictionary<int, ReplicatedProperties> synchronizedComponents; // instance id, game object
@@ -59,29 +57,20 @@ public class ServerTest : MonoBehaviour {
 
         int defaultMaxPlayerCount = 8;
         playerStates = new List<int>(defaultMaxPlayerCount);
-        
-        playerActiveStates = new List<byte>(defaultMaxPlayerCount);
         sendBuffers = new List<SerializedBuffer>(defaultMaxPlayerCount);
-
-        for(int i = 0; i < defaultMaxPlayerCount; ++i) {
-            sendBuffers.Add(new SerializedBuffer());
-            playerStates.Add(0);
-            playerActiveStates.Add(0);
-        }
-        toAllBuffer = new SerializedBuffer();
 
         synchronizedComponents = new Dictionary<int, ReplicatedProperties>();
     }
-    int getNewPlayerIndex() {
-        for(int i = 0; i < playerActiveStates.Count; ++i) {
-            if(playerActiveStates[i] == 0) {
-                playerActiveStates[i] = 1;
-                return i;
-            }
-        }
-        playerActiveStates.Add(1);
-        return playerActiveStates.Count - 1;
-    }
+    //int getNewPlayerIndex() {
+    //    for(int i = 0; i < playerActiveStates.Count; ++i) {
+    //        if(playerActiveStates[i] == 0) {
+    //            playerActiveStates[i] = 1;
+    //            return i;
+    //        }
+    //    }
+    //    playerActiveStates.Add(1);
+    //    return playerActiveStates.Count - 1;
+    //}
 
     private void Start() {
     }
@@ -125,13 +114,14 @@ public class ServerTest : MonoBehaviour {
             //spawnNetGameObjectOnSingleRemote2(goid, path, playerStates[i]);
 
             // 2    1   4x?   2     ?
-            toAllBuffer.serializeUShort((ushort)NetOpCodes.SpawnPrefab);
-            toAllBuffer.serializeByte((byte)component_ids.Length);
+            sendBuffers[i].serializeUShort((ushort)NetOpCodes.SpawnPrefab);
+            sendBuffers[i].serializeByte((byte)component_ids.Length);
             // instance id count
             for (int j = 0; j < component_ids.Length; ++j) {
-                toAllBuffer.serializeInt(component_ids[j]);
+                sendBuffers[i].serializeInt(component_ids[j]);
             }
-            toAllBuffer.serializeString(path);
+            sendBuffers[i].serializeString(path);
+            sendBuffers[i].incrementCommandCount();
         }
     }
 
@@ -164,16 +154,10 @@ public class ServerTest : MonoBehaviour {
                 case NetworkEventType.ConnectEvent:    //2
                     // create player controller
                     Debug.Log("socket id " + recHostId + ", conn " + recConnectionId + ", channel " + channelId);
-                    int newPlayerIndex = getNewPlayerIndex();
-                    if (newPlayerIndex >= 0) {
-                        playerStates[newPlayerIndex] = recConnectionId;
-
-
-                        spawnReplicatedGameObject(recConnectionId, PlayerStatePrefabPath);
-                    }
-                    else {
-                        Debug.Log("new PlayerState failed to create!");
-                    }
+                    playerStates.Add(recConnectionId);
+                    sendBuffers.Add(new SerializedBuffer());
+                    spawnReplicatedGameObject(recConnectionId, PlayerStatePrefabPath);
+                    
                     break;
                 case NetworkEventType.DataEvent:       //3
                     ClientTest.decodeRawData(recvBuffer, synchronizedComponents);
@@ -190,23 +174,24 @@ public class ServerTest : MonoBehaviour {
         replicateToClients();
     }
     public void repVar(int component_id, ushort var_id, int val, byte rep_mode) {
-        toAllBuffer.repInt(component_id, var_id, val);
+        for (int i = 0; i < playerStates.Count; ++i) {
+            sendBuffers[i].repInt(component_id, var_id, val);
+        }
     }
     public void repVar(int component_id, ushort var_id, float val, byte rep_mode) {
-        toAllBuffer.repFloat(component_id, var_id, val);
+        for (int i = 0; i < playerStates.Count; ++i) {
+            sendBuffers[i].repFloat(component_id, var_id, val);
+        }
     }
     byte rpcSessionMode;
     int rpcSessionOwner;
     public void rpcBegin(int component_id, ushort rpc_id, byte mode, int owner_id) {
         rpcSessionMode = mode;
         rpcSessionOwner = owner_id;
-        if ((rpcSessionMode & (SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote)) > 0) {
-            toAllBuffer.rpcBegin(component_id, rpc_id, mode);
-        }
-        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner ) > 0) {
+        if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner ) > 0) {
             for(int i = 0; i < playerStates.Count; ++i) {
                 if(playerStates[i] == rpcSessionOwner) {
-                    sendBuffers[i].rpcBegin(component_id, rpc_id, mode);
+                    sendBuffers[i].rpcBegin(component_id, rpc_id, rpcSessionMode);
                     break;
                 }
             }
@@ -214,17 +199,14 @@ public class ServerTest : MonoBehaviour {
         else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToRemote) > 0) {
             for (int i = 0; i < playerStates.Count; ++i) {
                 if (playerStates[i] != rpcSessionOwner) {
-                    sendBuffers[i].rpcBegin(component_id, rpc_id, mode);
+                    sendBuffers[i].rpcBegin(component_id, rpc_id, rpcSessionMode);
                     break;
                 }
             }
         }
     }
     public void rpcEnd() {
-        if ((rpcSessionMode & (SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote)) > 0) {
-            toAllBuffer.rpcEnd();
-        }
-        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
+        if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
             for (int i = 0; i < playerStates.Count; ++i) {
                 if (playerStates[i] == rpcSessionOwner) {
                     sendBuffers[i].rpcEnd();
@@ -243,10 +225,12 @@ public class ServerTest : MonoBehaviour {
     }
     public void rpcAddParam(byte val) {
         
-        if ((rpcSessionMode & (SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote)) > 0) {
-            toAllBuffer.rpcAddParam(val);
-        }
-        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
+        //if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0
+        //    && (rpcSessionMode & SerializedBuffer.RPCMode_ToRemote) > 0) {
+        //    toAllBuffer.rpcAddParam(val);
+        //}
+        //else 
+        if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
             for (int i = 0; i < playerStates.Count; ++i) {
                 if (playerStates[i] == rpcSessionOwner) {
                     sendBuffers[i].rpcAddParam(val);
@@ -264,11 +248,7 @@ public class ServerTest : MonoBehaviour {
         }
     }
     public void rpcAddParam(int val) {
-        toAllBuffer.rpcAddParam(val);
-        if ((rpcSessionMode & (SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote)) > 0) {
-            toAllBuffer.rpcAddParam(val);
-        }
-        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
+        if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
             for (int i = 0; i < playerStates.Count; ++i) {
                 if (playerStates[i] == rpcSessionOwner) {
                     sendBuffers[i].rpcAddParam(val);
@@ -286,11 +266,25 @@ public class ServerTest : MonoBehaviour {
         }
     }
     public void rpcAddParam(float val) {
-        toAllBuffer.rpcAddParam(val);
-        if ((rpcSessionMode & (SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote)) > 0) {
-            toAllBuffer.rpcAddParam(val);
+        if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerStates[i] == rpcSessionOwner) {
+                    sendBuffers[i].rpcAddParam(val);
+                    break;
+                }
+            }
         }
-        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
+        else if ((rpcSessionMode & SerializedBuffer.RPCMode_ToRemote) > 0) {
+            for (int i = 0; i < playerStates.Count; ++i) {
+                if (playerStates[i] != rpcSessionOwner) {
+                    sendBuffers[i].rpcAddParam(val);
+                    break;
+                }
+            }
+        }
+    }
+    public void rpcAddParam(Vector3 val) {
+        if ((rpcSessionMode & SerializedBuffer.RPCMode_ToOwner) > 0) {
             for (int i = 0; i < playerStates.Count; ++i) {
                 if (playerStates[i] == rpcSessionOwner) {
                     sendBuffers[i].rpcAddParam(val);
@@ -314,22 +308,11 @@ public class ServerTest : MonoBehaviour {
         // to each
         for (int i = 0; i < playerStates.Count; ++i)
         {
-            if (playerActiveStates[i] == 1 && sendBuffers[i].getCommandCount() > 0) {
+            if (sendBuffers[i].getCommandCount() > 0) {
                 sendBuffers[i].seal();
                 NetworkTransport.Send(socketId, playerStates[i], reliableCHN, sendBuffers[i].getBuffer(), sendBuffers[i].getOffset(), out error);
                 sendBuffers[i].reset();
             }
-        }
-        // to all
-        if (toAllBuffer.getCommandCount() > 0) {
-            toAllBuffer.seal();
-            for (int i = 0; i < playerStates.Count; ++i) {
-                if (playerActiveStates[i] == 1) {
-                    // change this to multicast?
-                    NetworkTransport.Send(socketId, playerStates[i], reliableCHN, toAllBuffer.getBuffer(), toAllBuffer.getOffset(), out error);
-                }
-            }
-            toAllBuffer.reset();
         }
     }
 }

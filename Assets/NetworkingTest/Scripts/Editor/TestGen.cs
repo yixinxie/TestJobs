@@ -68,15 +68,18 @@ public class TestGen {
             if (attributes == null || attributes.Length == 0) continue;
             string rpcAPI, rpcMode;
             StringBuilder ins;
+            string hasOwnerParam = "";
             if (attributes[0].isServer == 1) {
                 rpcAPI = "ClientTest.self";
                 rpcMode = "SerializedBuffer.RPCMode_ToServer";
                 ins = new StringBuilder(rpc_tmpServer);
+                
             }
             else {
                 rpcAPI = "ServerTest.self";
                 rpcMode = "SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote";
                 ins = new StringBuilder(rpc_tmpClient);
+                hasOwnerParam = ", owner";
             }
              
             ins.Replace("%func%", methodInfo[i].Name);
@@ -90,11 +93,11 @@ public class TestGen {
             }
             ins.Replace("%params%", paramText.ToString());
             StringBuilder serializeText = new StringBuilder();
-            serializeText.AppendLine("\t\t" + rpcAPI + ".rpcBegin(goId, " + methodIndex + ", " + rpcMode + ", owner);");
+            serializeText.AppendLine("\t\t" + rpcAPI + ".rpcBegin(goId, " + methodIndex + ", " + rpcMode + "" + hasOwnerParam + ");");
             for (int j = 0; j < paramInfo.Length; ++j)
             {
                 ParameterInfo pInfo = paramInfo[j];
-                if (pInfo.ParameterType.Equals(typeof(Int32)) || pInfo.ParameterType.Equals(typeof(Single)))
+                //if (pInfo.ParameterType.Equals(typeof(Int32)) || pInfo.ParameterType.Equals(typeof(Single)))
                 {
                     serializeText.AppendLine("\t\t" + rpcAPI + ".rpcAddParam(" + pInfo.Name + ");");
                 }
@@ -145,6 +148,8 @@ public class TestGen {
                 paramText.Append(paramInfo[j].ParameterType.ToString() + " " + paramInfo[j].Name + " = ClientTest.deserializeToInt(src, ref offset);");
             else if (pInfo.ParameterType.Equals(typeof(float)))
                 paramText.Append(paramInfo[j].ParameterType.ToString() + " " + paramInfo[j].Name + " = ClientTest.deserializeToFloat(src, ref offset);");
+            else if (pInfo.ParameterType.Equals(typeof(Vector3)))
+                paramText.Append(paramInfo[j].ParameterType.ToString() + " " + paramInfo[j].Name + " = ClientTest.deserializeToVector3(src, ref offset);");
 
             paramListSB.Append(paramInfo[j].Name);
             if (j < paramInfo.Length -1)

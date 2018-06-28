@@ -1,5 +1,5 @@
 
-public partial class CharacterMovement{
+public partial class FPSCharacter{
 
     /** variable replication methods(server)*/
     
@@ -15,28 +15,12 @@ public partial class CharacterMovement{
     
     /** rpc serializers*/
     
-    public void ReceiveUpdate_OnServer(UnityEngine.Vector3 pos,UnityEngine.Vector3 rot){
-		ClientTest.self.rpcBegin(goId, 64, SerializedBuffer.RPCMode_ToServer);
-		ClientTest.self.rpcAddParam(pos);
-		ClientTest.self.rpcAddParam(rot);
-		ClientTest.self.rpcEnd();
-
-    }
-
-
 
     /** rpc reception method(client)*/
     public override bool rpcReceive(ushort rpc_id, byte[] src, ref int offset) {
         if(base.rpcReceive(rpc_id, src, ref offset)) return true;
         switch(rpc_id){
             
-            case 64:
-            {
-                UnityEngine.Vector3 pos = ClientTest.deserializeToVector3(src, ref offset);UnityEngine.Vector3 rot = ClientTest.deserializeToVector3(src, ref offset);ReceiveUpdate(pos, rot);
-            }
-            break;
-
-
         }
         return true;
     }

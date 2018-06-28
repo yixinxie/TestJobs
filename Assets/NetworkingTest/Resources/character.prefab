@@ -159,6 +159,10 @@ MonoBehaviour:
   owner: -1
   alwaysRelevant: 1
   role: 255
+  height: 0
+  speed: 3
+  gravity: 9.8
+  TPCameraTrans: {fileID: 4726768055759192}
 --- !u!114 &114335086992622824
 MonoBehaviour:
   m_ObjectHideFlags: 1

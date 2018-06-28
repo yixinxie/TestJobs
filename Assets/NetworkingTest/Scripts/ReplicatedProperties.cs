@@ -7,14 +7,14 @@ public enum GameObjectRoles : byte {
     Undefined = 255,
 }
 public class ReplicatedProperties : MonoBehaviour {
-    
+
     public int owner = -1;
-    protected int goId;
+    protected int goId; // id on server.
     public bool alwaysRelevant = true;
     public GameObjectRoles role = GameObjectRoles.Undefined;
     protected virtual void Awake()
     {
-        goId = GetInstanceID();
+        goId = GetInstanceID(); // should only run on server.
     }
     // called on client
     public virtual bool stateRepReceive(ushort varOffset, byte[] src, ref int offset)
@@ -24,12 +24,17 @@ public class ReplicatedProperties : MonoBehaviour {
             owner = ClientTest.deserializeToInt(src, ref offset);
             return true;
         }
+        else if (varOffset == 1) {
+            goId = ClientTest.deserializeToInt(src, ref offset);
+            return true;
+        }
         return false;
     }
 
     public void rep_owner()
     {
         ServerTest.self.repVar(goId, 0, owner, SerializedBuffer.RPCMode_ToOwner| SerializedBuffer.RPCMode_ToRemote);
+        ServerTest.self.repVar(goId, 1, goId, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
     }
     // called by the server
     public void clientSetRole() {
@@ -48,8 +53,9 @@ public class ReplicatedProperties : MonoBehaviour {
         bool ret = false;
         switch (rpc_id) {
             case 0:
-                Debug.Log("clientSetRole!");
-                role = (GameObjectRoles)ClientTest.deserializeToInt(src, ref offset);
+                
+                role = (GameObjectRoles)ClientTest.deserializeToByte(src, ref offset);
+                Debug.Log(GetType().ToString() + " clientSetRole:" + role.ToString());
                 ret = true;
                 break;
         }

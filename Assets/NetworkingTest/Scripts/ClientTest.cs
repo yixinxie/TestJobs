@@ -80,8 +80,8 @@ public class ClientTest : MonoBehaviour
 
     public static byte decodeRawData(byte[] src, Dictionary<int, ReplicatedProperties> synchronizedComponents) {
         int offset = 0;
-        int repItemCount = deserializeToInt(src, ref offset);
-        for (int j = 0; j < repItemCount; ++j)
+        int commandCount = deserializeToInt(src, ref offset);
+        for (int j = 0; j < commandCount; ++j)
         {
             ushort opcode = deserializeToUShort(src, ref offset);
             if (opcode == (ushort)NetOpCodes.SpawnPrefab)
@@ -105,7 +105,7 @@ public class ClientTest : MonoBehaviour
                 string path = deserializeToString(src, ref offset);
                 if (found == false)
                 {
-                    Debug.Log("spawning " + path);
+                    
                     UnityEngine.Object o = Resources.Load(path);
                     GameObject spawnedGO = GameObject.Instantiate(o) as GameObject;
                     ReplicatedProperties[] rep_components = spawnedGO.GetComponents<ReplicatedProperties>();
@@ -113,6 +113,7 @@ public class ClientTest : MonoBehaviour
                     for (int i = 0; i < id_count; ++i)
                     {
                         synchronizedComponents.Add(serverInstIds[i], rep_components[i]);
+                        Debug.Log("spawning " + path + ":" + serverInstIds[i]);
                     }
                 }
                 else
@@ -123,7 +124,7 @@ public class ClientTest : MonoBehaviour
             else if (opcode == (ushort)NetOpCodes.RPCFunc)
             {
                 int component_id = deserializeToInt(src, ref offset);
-                ushort totalLength = deserializeToUShort(src, ref offset);
+                ushort skipIndex = deserializeToUShort(src, ref offset);
                 // the number of arguments is inferred by rpc_id
                 if (synchronizedComponents.ContainsKey(component_id)) {
 
@@ -131,7 +132,8 @@ public class ClientTest : MonoBehaviour
                     synchronizedComponents[component_id].rpcReceive(rpc_id, src, ref offset);
                 }
                 else {
-                    offset += totalLength;
+                    Debug.Log("rpc to entity: " + component_id + " not found!");
+                    offset = skipIndex;
                 }
             }
             else if (opcode == (ushort)NetOpCodes.Replication) { // this should not run on server.
@@ -150,12 +152,12 @@ public class ClientTest : MonoBehaviour
                         propComp.stateRepReceive(varOffset, src, ref offset);
                     }
                     else {
-                        Debug.Log("the server is trying to replicate a property to a component that no longer exists.");
+                        Debug.Log("rep to entity: " + component_id + " not found!");
                         offset = bkLength + totalLength;
                     }
                 }
                 else {
-                    Debug.Log("the server is trying to replicate a property to a component that no longer exists.");
+                    Debug.Log("rep to entity: " + component_id + " not found!");
                     offset = bkLength + totalLength;
                 }
             }
@@ -185,6 +187,22 @@ public class ClientTest : MonoBehaviour
     public static float deserializeToFloat(byte[] src, ref int offset)
     {
         float ret = BitConverter.ToSingle(src, offset);
+        offset += 4;
+        return ret;
+    }
+    public static byte deserializeToByte(byte[] src, ref int offset) {
+        byte ret = src[offset];
+        offset++;
+        return ret;
+    }
+
+    public static Vector3 deserializeToVector3(byte[] src, ref int offset) {
+        Vector3 ret;
+        ret.x = BitConverter.ToSingle(src, offset);
+        offset += 4;
+        ret.y = BitConverter.ToSingle(src, offset);
+        offset += 4;
+        ret.z = BitConverter.ToSingle(src, offset);
         offset += 4;
         return ret;
     }

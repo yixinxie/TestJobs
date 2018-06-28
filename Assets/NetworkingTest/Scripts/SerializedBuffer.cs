@@ -44,6 +44,9 @@ public class SerializedBuffer{
         Array.Copy(stringBytes, 0, src, offset, stringBytes.Length);
         offset += stringBytes.Length;
     }
+    public void incrementCommandCount() {
+        commandCount++;
+    }
 
     public void serializeVector3(Vector3 vec) {
         byte[] raw0 = BitConverter.GetBytes(vec.x);
@@ -110,11 +113,15 @@ public class SerializedBuffer{
     public const byte RPCMode_ToRemote = 4; //  0100
 
     public void rpcBegin(int component_id, ushort rpc_id, byte _rpcMode) {
+        if(rpcMode != RPCMode_None) {
+            Debug.LogError("the previous RPC did not finish!");
+        }
         rpcMode = _rpcMode;
 
         serializeUShort((ushort)NetOpCodes.RPCFunc);
         serializeInt(component_id);
         rpcTotalLengthIndex = offset;
+        offset += 2;
         serializeUShort(rpc_id);
     }
     public void rpcEnd() {
