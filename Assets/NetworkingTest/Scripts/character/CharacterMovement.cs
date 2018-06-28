@@ -60,37 +60,39 @@ using UnityEngine;
 
     }
     public void updateLook(float deltaTime) {
-        Vector3 mousepos = Input.mousePosition;
-        Vector3 diff = mousepos - lastMousePos;
-        float scrollDiff = Input.mouseScrollDelta.y;
-        lastMousePos = mousepos;
-        if (scrollDiff != 0f || Mathf.Abs(diff.y) > 0f) {
-            Vector3 sphericalVec = TPCameraTrans.localPosition - Vector3.up * height;
-            float radius = sphericalVec.magnitude;
-            Vector2 polarCoords;
-            toPolarCoords(sphericalVec, out polarCoords);
-            // zoom in/out
-            radius -= scrollDiff;
-            // zoom clamping
-            radius = Mathf.Clamp(radius, 0.5f, 80f);
+        if (role == GameObjectRoles.Autonomous) {
+            Vector3 mousepos = Input.mousePosition;
+            Vector3 diff = mousepos - lastMousePos;
+            float scrollDiff = Input.mouseScrollDelta.y;
+            lastMousePos = mousepos;
+            if (scrollDiff != 0f || Mathf.Abs(diff.y) > 0f) {
+                Vector3 sphericalVec = TPCameraTrans.localPosition - Vector3.up * height;
+                float radius = sphericalVec.magnitude;
+                Vector2 polarCoords;
+                toPolarCoords(sphericalVec, out polarCoords);
+                // zoom in/out
+                radius -= scrollDiff;
+                // zoom clamping
+                radius = Mathf.Clamp(radius, 0.5f, 80f);
 
-            // vertical pan
-            polarCoords.y += diff.y * deltaTime * 45f;
+                // vertical pan
+                polarCoords.y += diff.y * deltaTime * 45f;
 
-            // horizontal rotation
-            polarCoords.y = Mathf.Clamp(polarCoords.y, 10f, 170f);
-            Vector3 camPos;
-            fromPolarCoords(polarCoords, radius, out camPos);
-            TPCameraTrans.localPosition = camPos + Vector3.up * height;
-            TPCameraTrans.LookAt(transform.position + Vector3.up * height);
+                // horizontal rotation
+                polarCoords.y = Mathf.Clamp(polarCoords.y, 10f, 170f);
+                Vector3 camPos;
+                fromPolarCoords(polarCoords, radius, out camPos);
+                TPCameraTrans.localPosition = camPos + Vector3.up * height;
+                TPCameraTrans.LookAt(transform.position + Vector3.up * height);
 
-            //if(currentWeapon != null)
-            //    currentWeapon.transform.LookAt(currentWeapon.transform.position + TPCameraTrans.forward);
-        }
-        if (Mathf.Abs(diff.x) > 0f) {
-            Vector3 angles = transform.eulerAngles;
-            angles.y += diff.x;
-            transform.eulerAngles = angles;
+                //if(currentWeapon != null)
+                //    currentWeapon.transform.LookAt(currentWeapon.transform.position + TPCameraTrans.forward);
+            }
+            if (Mathf.Abs(diff.x) > 0f) {
+                Vector3 angles = transform.eulerAngles;
+                angles.y += diff.x;
+                transform.eulerAngles = angles;
+            }
         }
     }
     void toPolarCoords(Vector3 vec, out Vector2 polar) {

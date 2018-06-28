@@ -10,7 +10,7 @@ public class ReplicatedProperties : MonoBehaviour {
 
     public int owner = -1;
     protected int goId; // id on server.
-    public bool alwaysRelevant = true;
+    public bool alwaysRelevant = true; // not used!
     public GameObjectRoles role = GameObjectRoles.Undefined;
     protected virtual void Awake()
     {
@@ -31,10 +31,10 @@ public class ReplicatedProperties : MonoBehaviour {
         return false;
     }
 
-    public void rep_owner()
+    public virtual void replicateAllStates(byte repMode)
     {
-        ServerTest.self.repVar(goId, 0, owner, SerializedBuffer.RPCMode_ToOwner| SerializedBuffer.RPCMode_ToRemote);
-        ServerTest.self.repVar(goId, 1, goId, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
+        ServerTest.self.repVar(goId, 0, owner, repMode);
+        ServerTest.self.repVar(goId, 1, goId, repMode);
     }
     // called by the server
     public void clientSetRole() {
@@ -46,6 +46,14 @@ public class ReplicatedProperties : MonoBehaviour {
         ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ToRemote, owner);
         ServerTest.self.rpcAddParam((byte)GameObjectRoles.SimulatedProxy);
         ServerTest.self.rpcEnd();
+
+        // send an event to indicate the initial replication batch is completed.
+        ServerTest.self.rpcBegin(goId, 1, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote, owner);
+        ServerTest.self.rpcEnd();
+    }
+
+    protected virtual void initialReplicationComplete() {
+
     }
 
     public virtual bool rpcReceive(ushort rpc_id, byte[] src, ref int offset)
@@ -53,11 +61,15 @@ public class ReplicatedProperties : MonoBehaviour {
         bool ret = false;
         switch (rpc_id) {
             case 0:
-                
                 role = (GameObjectRoles)ClientTest.deserializeToByte(src, ref offset);
                 Debug.Log(GetType().ToString() + " clientSetRole:" + role.ToString());
                 ret = true;
                 break;
+            case 1:
+                initialReplicationComplete();
+                ret = true;
+                break;
+
         }
         return ret;
     }

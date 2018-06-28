@@ -108,9 +108,10 @@ public class SerializedBuffer{
 
     #region RPC
     public const byte RPCMode_None = 0;
-    public const byte RPCMode_ToServer = 1; // 0001
+    public const byte RPCMode_ToServer = 1; // 0001 not applicable on replicated variables
     public const byte RPCMode_ToOwner = 2; //  0010
     public const byte RPCMode_ToRemote = 4; //  0100
+    public const byte RPCMode_ToAll = 6; //  0110 
 
     public void rpcBegin(int component_id, ushort rpc_id, byte _rpcMode) {
         if(rpcMode != RPCMode_None) {

@@ -13,13 +13,8 @@ enum NetOpCodes : ushort {
     RPCFunc, // rpc
     Replication, // replication of variable
 }
-public struct RepStates {
-    public ReplicatedProperties repGO;
-    public List<int> replicatedToIds;
-    public RepStates(ReplicatedProperties _go) {
-        repGO = _go;
-        replicatedToIds = new List<int>(8);
-    }
+public class OwnedGameObject {
+    public List<GameObject> ownedObjects;
 }
 public class ServerTest : MonoBehaviour {
     // Use this for initialization
@@ -35,9 +30,9 @@ public class ServerTest : MonoBehaviour {
 
     List<int> playerStates;
     List<SerializedBuffer> sendBuffers;
-    //Dictionary<int, List<RepStates>> NetGOByOwners; // player controller(connection) id, owned NetGOs.
-
+    List<List<GameObject>> gameObjectsByOwner; // player controller(connection) id, owned NetGOs.
     Dictionary<int, ReplicatedProperties> synchronizedComponents; // instance id, game object
+    List<int> newConnectionList;
     void Awake () {
         self = this;
         Application.runInBackground = true;
@@ -58,28 +53,32 @@ public class ServerTest : MonoBehaviour {
         int defaultMaxPlayerCount = 8;
         playerStates = new List<int>(defaultMaxPlayerCount);
         sendBuffers = new List<SerializedBuffer>(defaultMaxPlayerCount);
-
         synchronizedComponents = new Dictionary<int, ReplicatedProperties>();
+        gameObjectsByOwner = new List<List<GameObject>>();
+        newConnectionList = new List<int>();
     }
-    //int getNewPlayerIndex() {
-    //    for(int i = 0; i < playerActiveStates.Count; ++i) {
-    //        if(playerActiveStates[i] == 0) {
-    //            playerActiveStates[i] = 1;
-    //            return i;
-    //        }
-    //    }
-    //    playerActiveStates.Add(1);
-    //    return playerActiveStates.Count - 1;
-    //}
 
     private void Start() {
     }
 
-    public void spawnReplicatedGameObject(int connId, string path) {
+    public GameObject spawnReplicatedGameObject(int connId, string path) {
         int[] goid;
         GameObject pcgo = spawnPrefabOnServer(connId, path, out goid);
-        spawnNetGameObject(goid, path);
-        repPropertyComponents(pcgo);
+
+        serializeGameObjectReplication(goid, path);
+
+        ReplicatedProperties[] repComponents = pcgo.GetComponents<ReplicatedProperties>();
+        for (int i = 0; i < repComponents.Length; ++i) {
+            repComponents[i].replicateAllStates(SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
+            repComponents[i].clientSetRole();
+        }
+
+        for (int i = 0; i < playerStates.Count; ++i) {
+            if(playerStates[i] == connId) {
+                gameObjectsByOwner[i].Add(pcgo);
+            }
+        }
+        return pcgo;
     }
     GameObject spawnPrefabOnServer(int connId, string prefabPath, out int[] comp_ids)
     {
@@ -97,17 +96,8 @@ public class ServerTest : MonoBehaviour {
         
         return newNetGO;
     }
-    void repPropertyComponents(GameObject go)
-    {
-        ReplicatedProperties[] repComponents = go.GetComponents<ReplicatedProperties>();
-        for (int i = 0; i < repComponents.Length; ++i)
-        {
-            repComponents[i].rep_owner();
-            repComponents[i].clientSetRole();
-        }
-    }
 
-    public void spawnNetGameObject(int[] component_ids, string path)
+    void serializeGameObjectReplication(int[] component_ids, string path)
     {
         for (int i = 0; i < playerStates.Count; ++i)
         {
@@ -129,13 +119,7 @@ public class ServerTest : MonoBehaviour {
         //byte error;
         //NetworkTransport.Disconnect(hostId, connectionId, out error);
     }
-    //public bool sendToClient = false;
     void FixedUpdate() {
-        //if (sendToClient) {
-        //    sendToClient = false;
-        //    for(int i = 0; i < playerStates.Count; ++i) {
-        //    }
-        //}
         bool loop = true;
 
         int recHostId;
@@ -145,6 +129,7 @@ public class ServerTest : MonoBehaviour {
         int bufferSize = 1024;
         int dataSize;
         byte error;
+        newConnectionList.Clear();
         for (int i = 0; i < 10 && loop; ++i) {
             NetworkEventType recData = NetworkTransport.Receive(out recHostId, out recConnectionId, out channelId, recvBuffer, bufferSize, out dataSize, out error);
             switch (recData) {
@@ -152,12 +137,8 @@ public class ServerTest : MonoBehaviour {
                     loop = false;
                     break;
                 case NetworkEventType.ConnectEvent:    //2
-                    // create player controller
                     Debug.Log("socket id " + recHostId + ", conn " + recConnectionId + ", channel " + channelId);
-                    playerStates.Add(recConnectionId);
-                    sendBuffers.Add(new SerializedBuffer());
-                    spawnReplicatedGameObject(recConnectionId, PlayerStatePrefabPath);
-                    
+                    newConnectionList.Add(recConnectionId);
                     break;
                 case NetworkEventType.DataEvent:       //3
                     ClientTest.decodeRawData(recvBuffer, synchronizedComponents);
@@ -165,11 +146,28 @@ public class ServerTest : MonoBehaviour {
                 case NetworkEventType.DisconnectEvent: //4
                     if (playerStates.Contains(recConnectionId)) {
                         Debug.Log("player " + recConnectionId + " disconnected.");
-                        playerStates.Remove(recConnectionId);
+                        for(int j = 0; j < playerStates.Count; ++j) {
+                            if(playerStates[j] == recConnectionId) {
+                                playerStates.RemoveAt(j);
+                                sendBuffers.RemoveAt(j);
+                                List<GameObject> toRemove = gameObjectsByOwner[j];
+                                for(int k = 0; k < toRemove.Count; ++k) {
+                                    GameObject.Destroy(toRemove[k]);
+                                }
+                                break;
+                            }
+                        }
                     }
                     Debug.Log(recData.ToString());
                     break;
             }
+        }
+        for(int i = 0; i < newConnectionList.Count; ++i) {
+            // create player state
+            playerStates.Add(newConnectionList[i]);
+            sendBuffers.Add(new SerializedBuffer());
+            gameObjectsByOwner.Add(new List<GameObject>());
+            spawnReplicatedGameObject(newConnectionList[i], PlayerStatePrefabPath);
         }
         replicateToClients();
     }

@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-/* Generated, Do not modify!*/
+
 public partial class PlayerState : ReplicatedProperties {
     // Use this for initialization
     public string characterPrefabPath;

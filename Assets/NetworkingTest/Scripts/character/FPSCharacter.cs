@@ -21,21 +21,19 @@ public partial class FPSCharacter : ReplicatedProperties {
         vehicleLayerMask = LayerMask.GetMask(new string[] { "vehicle"});
     }
     // Use this for initialization
-    void Start () {
+    protected override void initialReplicationComplete() {
+        base.initialReplicationComplete();
         //if(currentWeapon != null)
         //    currentWeapon.setAudioSource(GetComponent<AudioSource>());
 
         //buildControl = Camera.main.GetComponent<BuildControl>();
-        if(startWith)
+        if(role == GameObjectRoles.Autonomous)
             possess();
-        else {
-            enabled = false;
-        }
     }
     public void possess() {
-        //cameraTrans = Camera.main.GetComponent<CameraUtils>();
-        //cameraTrans.lerpToAttach(TPCameraTrans, 0.2f);
-        //Cursor.visible = false;
+        cameraTrans = Camera.main.GetComponent<CameraUtils>();
+        cameraTrans.lerpToAttach(charMovement.TPCameraTrans, 0.2f);
+        Cursor.visible = false;
         //isFirstPersonView = false;
         //lastMousePos = Input.mousePosition;
         //enabled = true;

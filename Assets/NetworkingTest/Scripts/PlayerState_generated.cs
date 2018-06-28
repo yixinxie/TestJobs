@@ -10,7 +10,11 @@ public partial class PlayerState{
     public void rep_testFloat() {
         ServerTest.self.repVar(goId, 65, testFloat, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
     }
-
+    public override void replicateAllStates(byte repMode) {
+        base.replicateAllStates(repMode);
+        rep_testVal();
+        rep_testFloat();
+    }
 
     /** variable reception method(client)*/
     public override bool stateRepReceive(ushort varOffset, byte[] src, ref int offset) {
