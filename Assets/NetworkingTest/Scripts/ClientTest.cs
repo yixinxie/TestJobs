@@ -59,8 +59,8 @@ public class ClientTest : MonoBehaviour
         sendBuffer.reset();
     }
 
-    public void rpcBegin(int component_id, ushort rpc_id, byte mode) {
-        sendBuffer.rpcBegin(component_id, rpc_id, mode);
+    public void rpcBegin(int component_id, ushort rpc_id) {
+        sendBuffer.rpcBegin(component_id, rpc_id);
     }
     public void rpcEnd() {
         sendBuffer.rpcEnd();

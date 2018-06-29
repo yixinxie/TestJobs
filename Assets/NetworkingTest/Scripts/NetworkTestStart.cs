@@ -5,6 +5,11 @@ using UnityEngine;
 
 public class NetworkTestStart : MonoBehaviour {
     // Use this for initialization
+    public static NetworkTestStart self;
+
+    private void Awake() {
+        self = this;
+    }
     void Start () {
         StreamReader sr = new StreamReader("network.config");
         Object obj;

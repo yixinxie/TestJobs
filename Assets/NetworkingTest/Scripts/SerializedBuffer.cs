@@ -6,11 +6,12 @@ public class SerializedBuffer{
     byte[] src;
     int offset;
     /* rpc package process states */
-    byte rpcMode;
+    bool isInRPCSession;
     ushort commandCount;
     int rpcTotalLengthIndex;
+    int capacity = 1024;
     public SerializedBuffer() {
-        src = new byte[1024];
+        src = new byte[capacity];
         offset = 4;
 
     }
@@ -46,6 +47,17 @@ public class SerializedBuffer{
     }
     public void incrementCommandCount() {
         commandCount++;
+        doubleCapacityIfRequired();
+    }
+    void doubleCapacityIfRequired() {
+        if (offset >= capacity * 0.75) {
+            capacity *= 2;
+            byte[] newArray = new byte[capacity];
+            Array.Copy(src, 0, newArray, 0, offset);
+            src = null;
+            src = newArray;
+            Debug.Log("serialized buffer capacity doubles:" + capacity);
+        }
     }
 
     public void serializeVector3(Vector3 vec) {
@@ -69,7 +81,7 @@ public class SerializedBuffer{
     }
 
     #region Replication
-    public void repInt(int component_id, ushort offsetId, int intVal) {
+    public void repVar(int component_id, ushort offsetId, int intVal) {
         // netopcode, ushort
         serializeUShort((ushort)NetOpCodes.Replication);
 
@@ -85,9 +97,10 @@ public class SerializedBuffer{
         // int value
         serializeInt(intVal);
         commandCount++;
+        doubleCapacityIfRequired();
     }
 
-    public void repFloat(int component_id, ushort offsetId, float floatVal) {
+    public void repVar(int component_id, ushort offsetId, float floatVal) {
         // netopcode, ushort
         serializeUShort((ushort)NetOpCodes.Replication);
 
@@ -103,21 +116,22 @@ public class SerializedBuffer{
         serializeFloat(floatVal);
 
         commandCount++;
+        doubleCapacityIfRequired();
     }
     #endregion
 
     #region RPC
     public const byte RPCMode_None = 0;
     public const byte RPCMode_ToServer = 1; // 0001 not applicable on replicated variables
-    public const byte RPCMode_ToOwner = 2; //  0010
-    public const byte RPCMode_ToRemote = 4; //  0100
+    public const byte RPCMode_ToTarget = 2; //  0010
+    public const byte RPCMode_ExceptTarget = 4; //  0100
     public const byte RPCMode_ToAll = 6; //  0110 
 
-    public void rpcBegin(int component_id, ushort rpc_id, byte _rpcMode) {
-        if(rpcMode != RPCMode_None) {
+    public void rpcBegin(int component_id, ushort rpc_id) {
+        if(isInRPCSession) {
             Debug.LogError("the previous RPC did not finish!");
         }
-        rpcMode = _rpcMode;
+        isInRPCSession = true;
 
         serializeUShort((ushort)NetOpCodes.RPCFunc);
         serializeInt(component_id);
@@ -126,13 +140,14 @@ public class SerializedBuffer{
         serializeUShort(rpc_id);
     }
     public void rpcEnd() {
-        rpcMode = RPCMode_None;
+        isInRPCSession = false;
         int bkOffset = offset;
         offset = rpcTotalLengthIndex;
         serializeUShort((ushort)bkOffset);
         offset = bkOffset;
 
         commandCount++;
+        doubleCapacityIfRequired();
     }
     public void rpcAddParam(ushort ushortVal) {
         serializeUShort(ushortVal);

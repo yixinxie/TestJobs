@@ -12,6 +12,7 @@ public class ReplicatedProperties : MonoBehaviour {
     protected int goId; // id on server.
     public bool alwaysRelevant = true; // not used!
     public GameObjectRoles role = GameObjectRoles.Undefined;
+    public int server_id { get { return goId; } }
     protected virtual void Awake()
     {
         goId = GetInstanceID(); // should only run on server.
@@ -30,26 +31,38 @@ public class ReplicatedProperties : MonoBehaviour {
         }
         return false;
     }
-
-    public virtual void replicateAllStates(byte repMode)
+    // replicate the essential variables.
+    public virtual void replicateAllStates(byte repMode, int conn_id = -1)
     {
-        ServerTest.self.repVar(goId, 0, owner, repMode);
-        ServerTest.self.repVar(goId, 1, goId, repMode);
+        ServerTest.self.repVar(goId, 0, owner, repMode, conn_id);
+        ServerTest.self.repVar(goId, 1, goId, repMode, conn_id);
     }
-    // called by the server
-    public void clientSetRole() {
-        role = GameObjectRoles.Authority;
-        ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ToOwner, owner);
-        ServerTest.self.rpcAddParam((byte)GameObjectRoles.Autonomous);
-        ServerTest.self.rpcEnd();
+    // called by the server, use rpc to set up the corresponding roles on the owner client and remote clients.
+    public void clientSetRole(int conn_id = -1) {
+        if (conn_id == -1) {
+            role = GameObjectRoles.Authority;
+            ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ToTarget, owner);
+            ServerTest.self.rpcAddParam((byte)GameObjectRoles.Autonomous);
+            ServerTest.self.rpcEnd();
 
-        ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ToRemote, owner);
-        ServerTest.self.rpcAddParam((byte)GameObjectRoles.SimulatedProxy);
-        ServerTest.self.rpcEnd();
+            ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ExceptTarget, owner);
+            ServerTest.self.rpcAddParam((byte)GameObjectRoles.SimulatedProxy);
+            ServerTest.self.rpcEnd();
 
-        // send an event to indicate the initial replication batch is completed.
-        ServerTest.self.rpcBegin(goId, 1, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote, owner);
-        ServerTest.self.rpcEnd();
+            // send an event to indicate the initial replication batch is completed.
+            ServerTest.self.rpcBegin(goId, 1, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget, owner);
+            ServerTest.self.rpcEnd();
+        }
+        else {
+            // call rpc on a single client.
+            ServerTest.self.rpcBegin(goId, 0, SerializedBuffer.RPCMode_ToTarget, conn_id);
+            ServerTest.self.rpcAddParam((byte)GameObjectRoles.SimulatedProxy);
+            ServerTest.self.rpcEnd();
+
+            // send an event to indicate the initial replication batch is completed.
+            ServerTest.self.rpcBegin(goId, 1, SerializedBuffer.RPCMode_ToTarget, conn_id);
+            ServerTest.self.rpcEnd();
+        }
     }
 
     protected virtual void initialReplicationComplete() {

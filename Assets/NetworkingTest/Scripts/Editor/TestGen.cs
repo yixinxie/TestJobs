@@ -71,13 +71,14 @@ public class TestGen {
             string hasOwnerParam = "";
             if (attributes[0].isServer == 1) {
                 rpcAPI = "ClientTest.self";
-                rpcMode = "SerializedBuffer.RPCMode_ToServer";
+                //rpcMode = "SerializedBuffer.RPCMode_ToServer";
+                rpcMode = "";
                 ins = new StringBuilder(rpc_tmpServer);
                 
             }
             else {
                 rpcAPI = "ServerTest.self";
-                rpcMode = "SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote";
+                rpcMode = "SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget";
                 ins = new StringBuilder(rpc_tmpClient);
                 hasOwnerParam = ", owner";
             }
@@ -208,12 +209,12 @@ public partial class %name%{
 
     static string repIntTmpl = @"
     public void rep_%var%() {
-        ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
+        ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ToRemote);
     }
 ";
     static string repFloatTmpl = @"
     public void rep_%var%() {
-        ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToOwner | SerializedBuffer.RPCMode_ToRemote);
+        ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget);
     }
 ";
 

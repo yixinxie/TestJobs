@@ -16,7 +16,7 @@ public partial class CharacterMovement{
     /** rpc serializers*/
     
     public void ReceiveUpdate_OnServer(UnityEngine.Vector3 pos,UnityEngine.Vector3 rot){
-		ClientTest.self.rpcBegin(goId, 64, SerializedBuffer.RPCMode_ToServer);
+		ClientTest.self.rpcBegin(goId, 64);
 		ClientTest.self.rpcAddParam(pos);
 		ClientTest.self.rpcAddParam(rot);
 		ClientTest.self.rpcEnd();
