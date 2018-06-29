@@ -50,8 +50,7 @@ public partial class FPSCharacter : ReplicatedProperties {
     void Update () {
         float deltaTime = Time.deltaTime;
         // update rotation
-        charMovement.updateLook(deltaTime);
-        charMovement.updateMovement(deltaTime);
+        charMovement.update(deltaTime);
         updateMouseClick();
 
 
