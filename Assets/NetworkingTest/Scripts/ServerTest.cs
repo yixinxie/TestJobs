@@ -41,21 +41,22 @@ public class ServerTest : MonoBehaviour {
         Application.runInBackground = true;
         NetworkTransport.Init();
         GlobalConfig gConfig = new GlobalConfig();
-        gConfig.MaxPacketSize = 500;
+        gConfig.MaxPacketSize = 512;
         NetworkTransport.Init(gConfig);
 
         ConnectionConfig config = new ConnectionConfig();
-        reliableCHN = config.AddChannel(QosType.Reliable);
-        unreliableCHN = config.AddChannel(QosType.Unreliable);
+        reliableCHN = config.AddChannel(QosType.AllCostDelivery);
+        unreliableCHN = config.AddChannel(QosType.StateUpdate);
 
         HostTopology topology = new HostTopology(config, 10); // max connections
-        socketId = NetworkTransport.AddHost(topology, serverPort);
+        //socketId = NetworkTransport.AddHost(topology, serverPort);
+        socketId = NetworkTransport.AddHostWithSimulator(topology, 30, 200, serverPort);
         Debug.Log("Socket Open. SocketId is: " + socketId);
         recvBuffer = new byte[bufferSize];
 
         int defaultMaxPlayerCount = 8;
         playerStates = new List<int>(defaultMaxPlayerCount);
-        sendBuffers = new List<SerializedBuffer>(defaultMaxPlayerCount);
+        sendBuffers = new List<SerializedBuffer>(defaultMaxPlayerCount * 2);
         synchronizedComponents = new Dictionary<int, ReplicatedProperties>();
         gameObjectsByOwner = new List<List<GameObjectSpawnInfo>>();
         newConnectionList = new List<int>();
@@ -142,27 +143,27 @@ public class ServerTest : MonoBehaviour {
     {
         if (conn_id == -1) {
             for (int i = 0; i < playerStates.Count; ++i) {
-                sendBuffers[i].serializeUShort((ushort)NetOpCodes.SpawnPrefab);
-                sendBuffers[i].serializeByte((byte)component_ids.Length);
+                sendBuffers[i * 2].serializeUShort((ushort)NetOpCodes.SpawnPrefab);
+                sendBuffers[i * 2].serializeByte((byte)component_ids.Length);
                 // instance id count
                 for (int j = 0; j < component_ids.Length; ++j) {
-                    sendBuffers[i].serializeInt(component_ids[j]);
+                    sendBuffers[i * 2].serializeInt(component_ids[j]);
                 }
-                sendBuffers[i].serializeString(path);
-                sendBuffers[i].incrementCommandCount();
+                sendBuffers[i * 2].serializeString(path);
+                sendBuffers[i * 2].incrementCommandCount();
             }
         }
         else {
             int idx = getIndexByConnectionId(conn_id);
             if (idx >= 0) {
-                sendBuffers[idx].serializeUShort((ushort)NetOpCodes.SpawnPrefab);
-                sendBuffers[idx].serializeByte((byte)component_ids.Length);
+                sendBuffers[idx * 2].serializeUShort((ushort)NetOpCodes.SpawnPrefab);
+                sendBuffers[idx * 2].serializeByte((byte)component_ids.Length);
                 // instance id count
                 for (int j = 0; j < component_ids.Length; ++j) {
-                    sendBuffers[idx].serializeInt(component_ids[j]);
+                    sendBuffers[idx * 2].serializeInt(component_ids[j]);
                 }
-                sendBuffers[idx].serializeString(path);
-                sendBuffers[idx].incrementCommandCount();
+                sendBuffers[idx * 2].serializeString(path);
+                sendBuffers[idx * 2].incrementCommandCount();
             }
         }
 
@@ -187,6 +188,9 @@ public class ServerTest : MonoBehaviour {
             if(dataSize >= bufferSize) {
                 Debug.LogWarning("the data received exceeds the buffer size!");
             }
+            if (channelId == unreliableCHN) {
+                Debug.Log("unreliable: " + dataSize);
+            }
             switch (recData) {
                 case NetworkEventType.Nothing:         //1
                     loop = false;
@@ -204,7 +208,9 @@ public class ServerTest : MonoBehaviour {
                         for(int j = 0; j < playerStates.Count; ++j) {
                             if(playerStates[j] == recConnectionId) {
                                 playerStates.RemoveAt(j);
-                                sendBuffers.RemoveAt(j);
+                                sendBuffers.RemoveAt(j * 2 + 1);
+                                sendBuffers.RemoveAt(j * 2);
+                                
                                 List<GameObjectSpawnInfo> toRemove = gameObjectsByOwner[j];
                                 for(int k = 0; k < toRemove.Count; ++k) {
                                     GameObject.Destroy(toRemove[k].obj);
@@ -222,6 +228,7 @@ public class ServerTest : MonoBehaviour {
             // create player state
             playerStates.Add(newConnectionList[i]);
             sendBuffers.Add(new SerializedBuffer());
+            sendBuffers.Add(new SerializedBuffer());
             gameObjectsByOwner.Add(new List<GameObjectSpawnInfo>());
             replicateExistingGameObjectsToNewClient(newConnectionList[i]);
             spawnReplicatedGameObject(newConnectionList[i], PlayerStatePrefabPath);
@@ -232,12 +239,12 @@ public class ServerTest : MonoBehaviour {
         if (conn_id >= 0) {
             int idx = getIndexByConnectionId(conn_id);
             if (idx >= 0) {
-                sendBuffers[idx].repVar(component_id, var_id, val);
+                sendBuffers[idx * 2].repVar(component_id, var_id, val);
             }
         }
         else {
             for (int i = 0; i < playerStates.Count; ++i) {
-                sendBuffers[i].repVar(component_id, var_id, val);
+                sendBuffers[i * 2].repVar(component_id, var_id, val);
             }
         }
     }
@@ -246,12 +253,12 @@ public class ServerTest : MonoBehaviour {
         if (conn_id >= 0) {
             int idx = getIndexByConnectionId(conn_id);
             if(idx >= 0) {
-                sendBuffers[idx].repVar(component_id, var_id, val);
+                sendBuffers[idx * 2].repVar(component_id, var_id, val);
             }
         }
         else {
             for (int i = 0; i < playerStates.Count; ++i) {
-                sendBuffers[i].repVar(component_id, var_id, val);
+                sendBuffers[i * 2].repVar(component_id, var_id, val);
             }
         }
     }
@@ -260,17 +267,17 @@ public class ServerTest : MonoBehaviour {
     public void rpcBegin(int component_id, ushort rpc_id, byte mode, int owner_id) {
         rpcSessionMode = mode;
         sessionRPCTargetIndices.Clear();
-
+        int usingUnreliable = mode & SerializedBuffer.RPCMode_Unreliable;
         if ((rpcSessionMode & SerializedBuffer.RPCMode_ToTarget) > 0) {
             int idx = getIndexByConnectionId(owner_id);
             if (idx >= 0) {
-                sessionRPCTargetIndices.Add(idx);
+                sessionRPCTargetIndices.Add(idx * 2 + usingUnreliable);
             }
         }
         if ((rpcSessionMode & SerializedBuffer.RPCMode_ExceptTarget) > 0) {
             for (int i = 0; i < playerStates.Count; ++i) {
                 if (playerStates[i] != owner_id) {
-                    sessionRPCTargetIndices.Add(i);
+                    sessionRPCTargetIndices.Add(i * 2 + usingUnreliable);
                 }
             }
         }
@@ -312,10 +319,15 @@ public class ServerTest : MonoBehaviour {
         // to each
         for (int i = 0; i < playerStates.Count; ++i)
         {
-            if (sendBuffers[i].getCommandCount() > 0) {
-                sendBuffers[i].seal();
-                NetworkTransport.Send(socketId, playerStates[i], reliableCHN, sendBuffers[i].getBuffer(), sendBuffers[i].getOffset(), out error);
-                sendBuffers[i].reset();
+            if (sendBuffers[i * 2].getCommandCount() > 0) {
+                sendBuffers[i * 2].seal();
+                NetworkTransport.Send(socketId, playerStates[i], reliableCHN, sendBuffers[i * 2].getBuffer(), sendBuffers[i * 2].getOffset(), out error);
+                sendBuffers[i * 2].reset();
+            }
+            if (sendBuffers[i * 2 + 1].getCommandCount() > 0) {
+                sendBuffers[i * 2 + 1].seal();
+                NetworkTransport.Send(socketId, playerStates[i], unreliableCHN, sendBuffers[i * 2 + 1].getBuffer(), sendBuffers[i * 2 + 1].getOffset(), out error);
+                sendBuffers[i * 2 + 1].reset();
             }
         }
     }

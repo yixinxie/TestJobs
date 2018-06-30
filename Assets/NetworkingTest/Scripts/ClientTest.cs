@@ -33,8 +33,8 @@ public class ClientTest : MonoBehaviour
         NetworkTransport.Init(gConfig);
 
         ConnectionConfig config = new ConnectionConfig();
-        reliableCHN = config.AddChannel(QosType.Reliable);
-        unreliableCHN = config.AddChannel(QosType.Unreliable);
+        reliableCHN = config.AddChannel(QosType.AllCostDelivery);
+        unreliableCHN = config.AddChannel(QosType.StateUpdate);
 
         HostTopology topology = new HostTopology(config, 10); // max connections
         socketId = NetworkTransport.AddHost(topology, clientPort);
@@ -47,7 +47,9 @@ public class ClientTest : MonoBehaviour
 
     private void Start() {
         byte error;
-        connectionId = NetworkTransport.Connect(socketId, serverAddr, serverPort, 0, out error);
+        //connectionId = NetworkTransport.Connect(socketId, serverAddr, serverPort, 0, out error);
+        ConnectionSimulatorConfig csc = new ConnectionSimulatorConfig(30, 200, 30, 200, 0.2f);
+        connectionId = NetworkTransport.ConnectWithSimulator(socketId, serverAddr, serverPort, 0, out error, csc);
         Debug.Log("Connected to server. ConnectionId: " + connectionId + " error:" + (int)error);
     }
 
@@ -226,6 +228,9 @@ public class ClientTest : MonoBehaviour
         bool loop = true;
         for (int i = 0; i < 10 && loop; ++i) {
             NetworkEventType recData = NetworkTransport.Receive(out recHostId, out connectionId, out channelId, recvBuffer, bufferSize, out dataSize, out error);
+            if(channelId == unreliableCHN) {
+                Debug.Log("unreliable: " + dataSize);
+            }
             switch (recData) {
                 case NetworkEventType.Nothing:         //1
                     loop = false;

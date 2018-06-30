@@ -126,6 +126,7 @@ public class SerializedBuffer{
     public const byte RPCMode_ToTarget = 2; //  0010
     public const byte RPCMode_ExceptTarget = 4; //  0100
     public const byte RPCMode_ToAll = 6; //  0110 
+    public const byte RPCMode_Unreliable = 8; //  1000 
 
     public void rpcBegin(int component_id, ushort rpc_id) {
         if(isInRPCSession) {
