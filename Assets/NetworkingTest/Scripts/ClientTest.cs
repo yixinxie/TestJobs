@@ -19,7 +19,7 @@ public class ClientTest : MonoBehaviour
     int unreliableCHN;
     int serverConId;
     //byte[] sendBuffer;
-    SerializedBuffer sendBuffer;
+    SerializedBuffer[] sendBuffer;
     byte[] recvBuffer;
     public bool runTest = false;
     Dictionary<int, ReplicatedProperties> synchronizedComponents;
@@ -41,7 +41,9 @@ public class ClientTest : MonoBehaviour
         Debug.Log("Socket Open. SocketId is: " + socketId);
         recvBuffer = new byte[1024];
         synchronizedComponents = new Dictionary<int, ReplicatedProperties>();
-        sendBuffer = new SerializedBuffer();
+        sendBuffer = new SerializedBuffer[2];
+        sendBuffer[0] = new SerializedBuffer();
+        sendBuffer[1] = new SerializedBuffer();
 
     }
 
@@ -55,29 +57,43 @@ public class ClientTest : MonoBehaviour
 
     void sendRPCs() {
         byte error = 0;
-        if (sendBuffer.getCommandCount() == 0) return;
-        sendBuffer.seal();
-        NetworkTransport.Send(serverConId, connectionId, reliableCHN, sendBuffer.getBuffer(), sendBuffer.getOffset(), out error);
-        sendBuffer.reset();
-    }
+        if (sendBuffer[0].getCommandCount() > 0) {
+            sendBuffer[0].seal();
+            NetworkTransport.Send(serverConId, connectionId, reliableCHN, sendBuffer[0].getBuffer(), sendBuffer[0].getOffset(), out error);
+            sendBuffer[0].reset();
+        }
 
-    public void rpcBegin(int component_id, ushort rpc_id) {
-        sendBuffer.rpcBegin(component_id, rpc_id);
+        if (sendBuffer[1].getCommandCount() > 0) {
+            sendBuffer[1].seal();
+            NetworkTransport.Send(serverConId, connectionId, unreliableCHN, sendBuffer[1].getBuffer(), sendBuffer[1].getOffset(), out error);
+            sendBuffer[1].reset();
+        }
+    }
+    byte rpcChannelIdx;
+    // channel 0 is reliable, channel 1 is unreliable
+    public void rpcBegin(int component_id, ushort rpc_id, byte mode = 0) {
+        if ((mode & SerializedBuffer.RPCMode_Unreliable) > 0) {
+            rpcChannelIdx = 1;
+        }
+        else {
+            rpcChannelIdx = 0;
+        }
+        sendBuffer[rpcChannelIdx].rpcBegin(component_id, rpc_id);
     }
     public void rpcEnd() {
-        sendBuffer.rpcEnd();
+        sendBuffer[rpcChannelIdx].rpcEnd();
     }
     public void rpcAddParam(byte val) {
-        sendBuffer.rpcAddParam(val);
+        sendBuffer[rpcChannelIdx].rpcAddParam(val);
     }
     public void rpcAddParam(int val) {
-        sendBuffer.rpcAddParam(val);
+        sendBuffer[rpcChannelIdx].rpcAddParam(val);
     }
     public void rpcAddParam(float val) {
-        sendBuffer.rpcAddParam(val);
+        sendBuffer[rpcChannelIdx].rpcAddParam(val);
     }
     public void rpcAddParam(Vector3 val) {
-        sendBuffer.rpcAddParam(val);
+        sendBuffer[rpcChannelIdx].rpcAddParam(val);
     }
 
     public static byte decodeRawData(byte[] src, Dictionary<int, ReplicatedProperties> synchronizedComponents) {
@@ -115,7 +131,7 @@ public class ClientTest : MonoBehaviour
                     for (int i = 0; i < id_count; ++i)
                     {
                         synchronizedComponents.Add(serverInstIds[i], rep_components[i]);
-                        Debug.Log("spawning " + path + ":" + serverInstIds[i]);
+                        Debug.Log("spawning " + path + ":" + serverInstIds[i] + ":" + rep_components[i].GetType());
                     }
                 }
                 else

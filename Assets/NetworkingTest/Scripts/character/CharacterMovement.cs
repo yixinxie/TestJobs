@@ -18,7 +18,7 @@ using UnityEngine;
     void Start () {
 		
 	}
-    [RPC(isServer =1)]
+    [RPC(isServer = 1, Reliable = false)]
     public void ReceiveUpdate(Vector3 pos, Vector3 rot) {
         transform.position = pos;
         transform.eulerAngles = rot;

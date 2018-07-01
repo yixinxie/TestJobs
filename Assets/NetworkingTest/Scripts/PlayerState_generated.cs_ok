@@ -1,5 +1,4 @@
 
-/** auto-generated file. do not modify unless you know what you are doing! */
 public partial class PlayerState{
 
     /** variable replication methods(server)*/
@@ -11,12 +10,10 @@ public partial class PlayerState{
     public void rep_testFloat() {
         ServerTest.self.repVar(goId, 65, testFloat, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget);
     }
-
-    
-    /** replicate all states upon gameobject replication*/
     public override void replicateAllStates(byte repMode, int conn_id = -1) {
         base.replicateAllStates(repMode, conn_id);
-        rep_testVal();rep_testFloat();
+        rep_testVal();
+        rep_testFloat();
     }
 
     /** variable reception method(client)*/

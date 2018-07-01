@@ -72,13 +72,19 @@ public class TestGen {
             if (attributes[0].isServer == 1) {
                 rpcAPI = "ClientTest.self";
                 //rpcMode = "SerializedBuffer.RPCMode_ToServer";
-                rpcMode = "";
+                if (attributes[0].Reliable)
+                    rpcMode = "";
+                else
+                    rpcMode = ", SerializedBuffer.RPCMode_Unreliable";
                 ins = new StringBuilder(rpc_tmpServer);
                 
             }
             else {
                 rpcAPI = "ServerTest.self";
-                rpcMode = "SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget";
+                if(attributes[0].Reliable)
+                    rpcMode = ", SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget";
+                else
+                    rpcMode = ", SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget | SerializedBuffer.RPCMode_Unreliable";
                 ins = new StringBuilder(rpc_tmpClient);
                 hasOwnerParam = ", owner";
             }
@@ -94,7 +100,7 @@ public class TestGen {
             }
             ins.Replace("%params%", paramText.ToString());
             StringBuilder serializeText = new StringBuilder();
-            serializeText.AppendLine("\t\t" + rpcAPI + ".rpcBegin(goId, " + methodIndex + ", " + rpcMode + "" + hasOwnerParam + ");");
+            serializeText.AppendLine("\t\t" + rpcAPI + ".rpcBegin(goId, " + methodIndex + rpcMode + "" + hasOwnerParam + ");");
             for (int j = 0; j < paramInfo.Length; ++j)
             {
                 ParameterInfo pInfo = paramInfo[j];
@@ -162,10 +168,17 @@ public class TestGen {
     }
 
     static string csClassTmpl = @"
+/** auto-generated file. do not modify unless you know what you are doing! */
 public partial class %name%{
 
     /** variable replication methods(server)*/
     %rep_body%
+    
+    /** replicate all states upon gameobject replication*/
+    public override void replicateAllStates(byte repMode, int conn_id = -1) {
+        base.replicateAllStates(repMode, conn_id);
+        %repvarlist%
+    }
 
     /** variable reception method(client)*/
     public override bool stateRepReceive(ushort varOffset, byte[] src, ref int offset) {
@@ -194,11 +207,12 @@ public partial class %name%{
         
         StringBuilder fullClassText = new StringBuilder(csClassTmpl.Replace("%name%", thisType.ToString()));
 
-        string sendBody, switchBody;
+        string sendBody, switchBody, allStateRepList;
         Dictionary<string, string> onRepForVars = generateOnrepCode(thisType);
-        sendBody = generateStateRepCode(thisType, out switchBody, onRepForVars);
+        sendBody = generateStateRepCode(thisType, out switchBody, out allStateRepList, onRepForVars);
         fullClassText.Replace("%rep_body%", sendBody);
         fullClassText.Replace("%rep_switch_body%", switchBody);
+        fullClassText.Replace("%repvarlist%", allStateRepList);
 
         string rpcSwitchCode;
         string rpcCode = generateRPCCode(thisType, out rpcSwitchCode);
@@ -209,7 +223,7 @@ public partial class %name%{
 
     static string repIntTmpl = @"
     public void rep_%var%() {
-        ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ToRemote);
+        ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget);
     }
 ";
     static string repFloatTmpl = @"
@@ -234,12 +248,12 @@ public partial class %name%{
             
             break;
 ";
-    static string generateStateRepCode(Type thisType, out string repSwitchCode, Dictionary<string,string> onRepForVars)
+    static string generateStateRepCode(Type thisType, out string repSwitchCode, out string allStateRepCode, Dictionary<string,string> onRepForVars)
     {
         const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Public |
              BindingFlags.Instance | BindingFlags.Static;
         FieldInfo[] fields = thisType.GetFields(flags);
-
+        allStateRepCode = "";
         ushort fieldIndex = 64;
         StringBuilder sendBody = new StringBuilder();
         StringBuilder switchBody = new StringBuilder();
@@ -266,7 +280,8 @@ public partial class %name%{
             ins = ins.Replace("%var%", fieldInfo.Name);
             ins = ins.Replace("%offset%", "" + fieldIndex);
             sendBody.Append(ins);
-
+            string allStateRepPart = "rep_%var%();".Replace("%var%", fieldInfo.Name);
+            allStateRepCode += allStateRepPart;
             insSwitch = insSwitch.Replace("%var_offset%", "" + fieldIndex);
             insSwitch = insSwitch.Replace("%var%", fieldInfo.Name);
             if (onRepForVars.ContainsKey(fieldInfo.Name))

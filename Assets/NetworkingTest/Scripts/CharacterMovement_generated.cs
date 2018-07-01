@@ -1,8 +1,15 @@
 
+/** auto-generated file. do not modify unless you know what you are doing! */
 public partial class CharacterMovement{
 
     /** variable replication methods(server)*/
     
+    
+    /** replicate all states upon gameobject replication*/
+    public override void replicateAllStates(byte repMode, int conn_id = -1) {
+        base.replicateAllStates(repMode, conn_id);
+        
+    }
 
     /** variable reception method(client)*/
     public override bool stateRepReceive(ushort varOffset, byte[] src, ref int offset) {
@@ -16,7 +23,7 @@ public partial class CharacterMovement{
     /** rpc serializers*/
     
     public void ReceiveUpdate_OnServer(UnityEngine.Vector3 pos,UnityEngine.Vector3 rot){
-		ClientTest.self.rpcBegin(goId, 64);
+		ClientTest.self.rpcBegin(goId, 64, SerializedBuffer.RPCMode_Unreliable);
 		ClientTest.self.rpcAddParam(pos);
 		ClientTest.self.rpcAddParam(rot);
 		ClientTest.self.rpcEnd();

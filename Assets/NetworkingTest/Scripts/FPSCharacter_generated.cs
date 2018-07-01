@@ -1,8 +1,15 @@
 
+/** auto-generated file. do not modify unless you know what you are doing! */
 public partial class FPSCharacter{
 
     /** variable replication methods(server)*/
     
+    
+    /** replicate all states upon gameobject replication*/
+    public override void replicateAllStates(byte repMode, int conn_id = -1) {
+        base.replicateAllStates(repMode, conn_id);
+        
+    }
 
     /** variable reception method(client)*/
     public override bool stateRepReceive(ushort varOffset, byte[] src, ref int offset) {

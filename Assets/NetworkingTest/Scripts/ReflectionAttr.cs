@@ -36,9 +36,8 @@ public class OnRep : Attribute
 {
     public string forVar;
 }
-[AttributeUsage(AttributeTargets.Method, Inherited = false)]
-public class RPC : Attribute
-{
+[AttributeUsage(AttributeTargets.Method, Inherited = true)]
+public class RPC : Attribute {
     bool reliable = true;
     byte syncMode;
     public byte isServer = 1;
@@ -48,8 +47,7 @@ public class RPC : Attribute
         set { syncMode = (byte)value; }
     }
 
-    public virtual bool Reliable
-    {
+    public virtual bool Reliable {
         get { return reliable; }
         set { reliable = (bool)value; }
     }
