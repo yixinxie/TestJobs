@@ -2,22 +2,28 @@
 using System.Collections.Generic;
 using UnityEngine;
 
- public partial class CharacterMovement : ReplicatedProperties {
+public partial class CharacterMovement : ReplicatedProperties {
     CharacterController cc;
     public float height;
     public float speed = 3f;
     public float gravity = 9.8f;
     public Transform TPCameraTrans;
     Vector3 lastMousePos;
+    float skinWidth;
+    int movementCollisionLayer;
     protected override void Awake() {
         base.Awake();
+
         cc = GetComponent<CharacterController>();
         height = cc.height;
+        skinWidth = cc.skinWidth;
+
+        movementCollisionLayer = LayerMask.GetMask(new string[] { "Default", "Terrain" });
     }
     // Use this for initialization
-    void Start () {
-		
-	}
+    void Start() {
+
+    }
     [RPC(isServer = 1, Reliable = false)]
     public void ReceiveUpdate(Vector3 pos, Vector3 rot) {
         transform.position = pos;
@@ -25,7 +31,7 @@ using UnityEngine;
     }
     public void LateUpdate() {
         //transform.po
-        if (role == GameObjectRoles.Autonomous || role == GameObjectRoles.None) {
+        if (role == GameObjectRoles.Autonomous) {
             //ClientTest.self.rpcBegin(goId, 16, SerializedBuffer.RPCMode_ToServer);
             //ClientTest.self.rpcAddParam(transform.position);
             //ClientTest.self.rpcAddParam(transform.eulerAngles);
@@ -40,30 +46,48 @@ using UnityEngine;
         }
     }
     public void update(float deltaTime) {
-        if (role == GameObjectRoles.Autonomous) {
+        if (role != GameObjectRoles.Authority || role != GameObjectRoles.SimulatedProxy) {
             updateMovement(deltaTime);
             updateLook(deltaTime);
         }
     }
+    public bool grounded;
     void updateMovement(float deltaTime) {
         // update movement.
-        
+        RaycastHit hitResult;
+        bool isGrounded;
+        isGrounded = Physics.SphereCast(transform.position, cc.radius, Vector3.down, out hitResult, skinWidth * 2f, movementCollisionLayer);
+        Debug.DrawLine(transform.position, transform.position + Vector3.down * skinWidth * 2f, Color.green);
+
         float verticalInput = Input.GetAxisRaw("Vertical");
         float horizontalInput = Input.GetAxisRaw("Horizontal");
-        float jumpForce = 0.0f;
-        if (cc.isGrounded == true) {
+        Vector3 moveInput = transform.forward * verticalInput + transform.right * horizontalInput;
+        moveInput.Normalize();
+        Vector3 thisVelocity = Vector3.zero;
+        grounded = cc.isGrounded;
+        if (cc.isGrounded) {
+            thisVelocity = moveInput * speed;
             if (Input.GetKeyDown(KeyCode.Space)) {
-                jumpForce = 100f;
+                thisVelocity += Vector3.up * 3.8f;
+                aerialVelocity = thisVelocity;
+
             }
+            cc.Move(thisVelocity * deltaTime);
+            
         }
-        Vector3 moveInput = transform.forward * verticalInput + transform.right * horizontalInput + Vector3.up * jumpForce;
-        moveInput.y -= gravity * deltaTime;
-        //moveInput.Normalize();
-        cc.Move(moveInput * deltaTime * speed);
+        else {
+            //moveInput *= 0.5f;
+
+            aerialVelocity.y -= gravity * deltaTime;
+            cc.Move(aerialVelocity * deltaTime);
+        }
+        
+        
 
         // jump
 
     }
+    Vector3 aerialVelocity;
     void updateLook(float deltaTime) {
         Vector3 mousepos = Input.mousePosition;
         Vector3 diff = mousepos - lastMousePos;
@@ -92,6 +116,7 @@ using UnityEngine;
             //if(currentWeapon != null)
             //    currentWeapon.transform.LookAt(currentWeapon.transform.position + TPCameraTrans.forward);
         }
+        // self rotation
         if (Mathf.Abs(diff.x) > 0f) {
             Vector3 angles = transform.eulerAngles;
             angles.y += diff.x;

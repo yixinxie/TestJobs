@@ -30,6 +30,9 @@ public partial class FPSCharacter : ReplicatedProperties {
         if(role == GameObjectRoles.Autonomous)
             possess();
     }
+    private void Start() {
+        possess();
+    }
     public void possess() {
         cameraTrans = Camera.main.GetComponent<CameraUtils>();
         cameraTrans.lerpToAttach(charMovement.TPCameraTrans, 0.2f);
