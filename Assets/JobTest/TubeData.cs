@@ -11,6 +11,7 @@ public struct TubeData
     public ushort itemId;
     public int idxInUpdateArray; // index in tubeOutputUpdateData
     public int idxInEndStateArray; // index of the end state.
+    public int idxInHeadEndStateArray; // index of the end state.
 
     // visual related
     public Vector3 from;
