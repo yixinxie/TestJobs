@@ -7,9 +7,9 @@ using Unity.Collections;
 using UnityEngine.Profiling;
 
 public struct CanTakeState {
-    public int idx;
+    public int idx; // index in the respective array.
     public byte cachedState;
-    public byte type;
+    public byte type; // 0 : tube, 1 : converter, 2 : consumer
 }
 public class TubeSimulate : MonoBehaviour {
     [HideInInspector]
@@ -41,6 +41,7 @@ public class TubeSimulate : MonoBehaviour {
     /* converter related*/
     List<ConverterData> converters;
 
+    List<ConsumerData> consumers;
     /* debug */
     CustomSampler sampler;
     float elapsedTime;
@@ -73,21 +74,19 @@ public class TubeSimulate : MonoBehaviour {
 
         generators = new List<GeneratorData>();
         converters = new List<ConverterData>();
+        consumers = new List<ConsumerData>();
     }
     // Use this for initialization
     void Start () {
         sampler = UnityEngine.Profiling.CustomSampler.Create("Job System");
         outputStateCount = 0;
         treeTest(1);
+        //simpleTest();
     }
     void simpleTest() {
         addGenerator(1);
         for (int i = 0; i < arrayLength; ++i) {
-            tubes[i].init(10.0f, 2.0f);
-            tubes[i].idxInUpdateArray = i;
-            //tubes[i].push();
-            tubes[i].idxInOutputStateArray = registerEndState();
-            endStates[i].cachedState = 0;
+            addTube(10.0f, 2.0f);
             if (i == 0) {
                 linkTubeToGenerator(0, i);
             }
@@ -104,15 +103,18 @@ public class TubeSimulate : MonoBehaviour {
             ids[i] = addGenerator((ushort)(i + 1)); 
         }
 
+        // make tubes the same amount as the generators
         List<int> tubeIds = new List<int>();
         for (int i = 0; i < generatorCount; ++i) {
             int tubeId = addTube(5f, 2f);
             tubeIds.Add(tubeId);
+
             linkTubeToGenerator(ids[i], tubeId);
         }
 
+        // make one converter for every two tubes and connect them.
         List<int> converterIds = new List<int>();
-        for (int i = 0; i < generatorCount / 2; ++i) {
+        for (int i = 0; i < tubeIds.Count / 2; ++i) {
 
             int convId = addConverter();
             converterIds.Add(convId);
@@ -120,49 +122,76 @@ public class TubeSimulate : MonoBehaviour {
             linkConverterToTube(tubeIds[i * 2 + 1], convId);
         }
 
+        //make one tube for each converter
+        List<int> tubeIds2 = new List<int>();
+        for (int i = 0; i < converterIds.Count; ++i) {
+            int tubeId = addTube(5f, 2f);
+            tubeIds2.Add(tubeId);
+            linkTubeToConverter(converterIds[i], tubeId);
+        }
+        List<int> consumerIds = new List<int>();
+        // make one storage for each tube
+        for (int i = 0; i < tubeIds2.Count; ++i) {
+            int consumerId = addConsumer();
+            consumerIds.Add(consumerId);
+            linkConsumerToTube(tubeIds2[i], consumerId);
+        }
+
         //for (int i = 0; i < generatorCount / 2; ++i) {
-        //    int tubeId = addTube(5f, 2f);
-        //    tubeIds.Add(tubeId);
-        //    linkTubeToConverter(converterIds[i], tubeId);
+
+        //    int convId = addConverter();
+        //    converterIds.Add(convId);
+        //    linkConverterToTube(tubeIds[i * 2], convId);
+        //    linkConverterToTube(tubeIds[i * 2 + 1], convId);
         //}
+
     }
-    // link consumer to tube
+    // link converter to tube
     void linkConverterToTube(int tubeIdx, int converterIdx) // tube ==> converter
     {
         TubeData tube = tubes[tubeIdx];
-        CanTakeState cts = endStates[tube.idxInOutputStateArray];
+        CanTakeState cts = endStates[tube.idxInEndStateArray];
         cts.type = 1;
         cts.idx = converterIdx;
-        endStates[tube.idxInOutputStateArray] = cts;
+        endStates[tube.idxInEndStateArray] = cts;
+        //cts = endStates[]
     }
     void linkTubeToConverter(int converterIdx, int tubeIdx) // converter ==> tube
     {
         ConverterData conv = converters[converterIdx];
-        CanTakeState cts = endStates[conv.idxInOutputStateArray];
+        CanTakeState cts = endStates[conv.idxInEndStateArray];
         cts.type = 0;
         cts.idx = tubeIdx;
-        endStates[conv.idxInOutputStateArray] = cts;
+        endStates[conv.idxInEndStateArray] = cts;
     }
 
     void linkTubeToGenerator(int generatorIdx, int tubeIdx) // generator ==> tube
     {
         GeneratorData genData = generators[generatorIdx];
-        CanTakeState cts = endStates[genData.idxInOutputStateArray];
+        CanTakeState cts = endStates[genData.idxInEndStateArray];
         cts.type = 0;
         cts.idx = tubeIdx;
-        endStates[genData.idxInOutputStateArray] = cts;
+        endStates[genData.idxInEndStateArray] = cts;
     }
 
     void linkTubeToTube(int tubeIdxPre, int tube1IdxSucc) // tube ==> tube
     {
         TubeData tubeData = tubes[tubeIdxPre];
-        CanTakeState cts = endStates[tubeData.idxInOutputStateArray];
+        CanTakeState cts = endStates[tubeData.idxInEndStateArray];
         cts.type = 0;
         cts.idx = tube1IdxSucc;
-        endStates[tubeData.idxInOutputStateArray] = cts;
+        endStates[tubeData.idxInEndStateArray] = cts;
     }
-    // tube to converter
+    
     // consumer to tube
+    void linkConsumerToTube(int tubeIdx, int consumerIdx) // tube ==> consumer
+    {
+        TubeData tube = tubes[tubeIdx];
+        CanTakeState cts = endStates[tube.idxInEndStateArray];
+        cts.type = 2;
+        cts.idx = consumerIdx;
+        endStates[tube.idxInEndStateArray] = cts;
+    }
 
     public int addTube(float _length, float _speed)
     {
@@ -174,6 +203,9 @@ public class TubeSimulate : MonoBehaviour {
         }
         tubes[tubeCount].init(_length, _speed);
         tubes[tubeCount].idxInUpdateArray = tubeCount;
+
+        tubes[tubeCount].idxInEndStateArray = registerEndState();
+
         tubeCount++;
         return ret;
     }
@@ -184,7 +216,7 @@ public class TubeSimulate : MonoBehaviour {
         int ret = generators.Count;
         generators.Add(new GeneratorData());
         GeneratorData gen = generators[ret];
-        gen.init(_itemId, 2f, 3, ret, registerEndState());
+        gen.init(_itemId, 2f, 9999, ret, registerEndState());
         gen.start();
         generators[ret] = gen;
         return ret;
@@ -200,8 +232,14 @@ public class TubeSimulate : MonoBehaviour {
         return ret;
     }
 
-    public void addConsumer() {
-
+    public int addConsumer() {
+        //int ret = ConsumerData\
+        int ret = consumers.Count;
+        consumers.Add(new ConsumerData());
+        ConsumerData newStruct = new ConsumerData();
+        newStruct.init(123);
+        consumers[ret] = newStruct;
+        return ret;
     }
     public int registerEndState() {
         int ret = outputStateCount;
@@ -271,7 +309,7 @@ public class TubeSimulate : MonoBehaviour {
         for (int i = 0; i < generic[0].tempGenericUpdateOps.Length; ++i) {
             if (generic[0].tempGenericUpdateOps[i] != 0) {
                 GeneratorData gen = generators[i];
-                CanTakeState cts = endStates[gen.idxInOutputStateArray];
+                CanTakeState cts = endStates[gen.idxInEndStateArray];
                 // check if this generator has space at its end?
                 if (tubes[cts.idx].hasSpace(gen.itemId)) {
                     tubes[cts.idx].push(gen.itemId);
@@ -288,7 +326,7 @@ public class TubeSimulate : MonoBehaviour {
             int op = updateTubesJob.outputOps[i];
             if (op != 0)
             {
-                CanTakeState cts = endStates[tubes[i].idxInOutputStateArray];
+                CanTakeState cts = endStates[tubes[i].idxInEndStateArray];
                 TubeData srcTube = tubes[i];
                 if (cts.type == 0) // tube
                 {
@@ -302,9 +340,8 @@ public class TubeSimulate : MonoBehaviour {
                     {
                         srcTube.saturate();
                     }
-                    tubes[i] = srcTube;
                 }
-                else if(cts.type == 1)
+                else if(cts.type == 1) // converter
                 {
                     ConverterData conv = converters[cts.idx];
                     if (conv.hasSpace(srcTube.itemId)) {
@@ -316,18 +353,25 @@ public class TubeSimulate : MonoBehaviour {
                     else {
                         srcTube.saturate();
                     }
-                    tubes[i] = srcTube;
                 }
+                else if(cts.type == 2) { // consumer
+                    ConsumerData consData = consumers[cts.idx];
+                    consData.attemptToTake(srcTube.itemId);
+                    srcTube.pop();
+                    consumers[cts.idx] = consData;
+                }
+                tubes[i] = srcTube;
             }
         }
 
         // converter output
         for (int i = 0; i < generic[1].tempGenericUpdateOps.Length; ++i) {
             if (generic[1].tempGenericUpdateOps[i] != 0) {
-                CanTakeState cts = endStates[converters[i].idxInOutputStateArray];
+                CanTakeState cts = endStates[converters[i].idxInEndStateArray];
+                CanTakeState head_cts = endStates[converters[i].idxHeadInEndStateArray];
                 ConverterData conv = converters[i];
-                // check if this generator has space at its end?
-                if (cts.type == 0) { // tube
+                // check if this converter has space at its end?
+                if (cts.type == 0) { // the end entity of this converter is a tube
                     if (tubes[cts.idx].hasSpace(conv.targetId)) {
                         Debug.Log("converter out!");
                         tubes[cts.idx].push(conv.targetId);
@@ -337,7 +381,7 @@ public class TubeSimulate : MonoBehaviour {
                     }
                     else
                     {
-
+                        //head_cts
                     }
                 }
                 else if(cts.type == 1) { // converter

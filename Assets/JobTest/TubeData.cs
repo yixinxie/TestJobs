@@ -10,7 +10,7 @@ public struct TubeData
     public short count, currentIndex;
     public ushort itemId;
     public int idxInUpdateArray; // index in tubeOutputUpdateData
-    public int idxInOutputStateArray; // index of the end state.
+    public int idxInEndStateArray; // index of the end state.
 
     // visual related
     public Vector3 from;
@@ -42,6 +42,7 @@ public struct TubeData
         itemHalfWidth = 0.5f;
         count = 0;
         idxInUpdateArray = -1;
+        idxInEndStateArray = -1;
         currentIndex = -1;
     }
 
@@ -131,7 +132,6 @@ public struct TubeData
                 tmpPositions[i] = positions[i];
             }
         }
-        //if(insertPos > itemHalfWidth && insertPos < tmpPositions[0] - )
         tmpPositions = null;
     }
     
