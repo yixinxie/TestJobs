@@ -8,8 +8,11 @@ using UnityEngine.Profiling;
 
 public struct CanTakeState {
     public int idx; // index in the respective array.
-    public byte cachedState;
+    public int headIdx;
+    //public byte cachedState;
     public byte type; // 0 : tube, 1 : converter, 2 : consumer
+    public byte headType;
+
 }
 public class TubeSimulate : MonoBehaviour {
     [HideInInspector]
@@ -146,41 +149,68 @@ public class TubeSimulate : MonoBehaviour {
         //}
 
     }
+
+    const int CTS_Tube = 0;
+    const int CTS_Converter = 1;
+    const int CTS_Consumer = 2;
+    const int CTS_Generator = 4;
+
     // link converter to tube
     void linkConverterToTube(int tubeIdx, int converterIdx) // tube ==> converter
     {
         TubeData tube = tubes[tubeIdx];
         CanTakeState cts = endStates[tube.idxInEndStateArray];
-        cts.type = 1;
+        cts.type = CTS_Converter;
         cts.idx = converterIdx;
+
+        cts.headIdx = tubeIdx;
+        cts.headType = CTS_Tube;
         endStates[tube.idxInEndStateArray] = cts;
-        //cts = endStates[]
+
+        ConverterData convData = converters[converterIdx];
+        convData.idxHeadInEndStateArray = tube.idxInEndStateArray;
+        converters[converterIdx] = convData;
     }
     void linkTubeToConverter(int converterIdx, int tubeIdx) // converter ==> tube
     {
         ConverterData conv = converters[converterIdx];
         CanTakeState cts = endStates[conv.idxInEndStateArray];
-        cts.type = 0;
+        cts.type = CTS_Tube;
         cts.idx = tubeIdx;
+
+        cts.headIdx = converterIdx;
+        cts.headType = CTS_Converter;
         endStates[conv.idxInEndStateArray] = cts;
+
+        //tubes[tubeIdx].idxInHeadEndStateArray = genData.idxInEndStateArray;
+        TubeData tubeData = tubes[tubeIdx];
+        tubeData.idxInHeadEndStateArray = conv.idxInEndStateArray;
+        tubes[tubeIdx] = tubeData;
     }
+    
 
     void linkTubeToGenerator(int generatorIdx, int tubeIdx) // generator ==> tube
     {
         GeneratorData genData = generators[generatorIdx];
         CanTakeState cts = endStates[genData.idxInEndStateArray];
-        cts.type = 0;
+        cts.type = CTS_Tube;
         cts.idx = tubeIdx;
+        cts.headIdx = generatorIdx;
+        cts.headType = CTS_Generator;
         endStates[genData.idxInEndStateArray] = cts;
+        tubes[tubeIdx].idxInHeadEndStateArray = genData.idxInEndStateArray;
     }
 
     void linkTubeToTube(int tubeIdxPre, int tube1IdxSucc) // tube ==> tube
     {
         TubeData tubeData = tubes[tubeIdxPre];
         CanTakeState cts = endStates[tubeData.idxInEndStateArray];
-        cts.type = 0;
+        cts.type = CTS_Tube;
         cts.idx = tube1IdxSucc;
+        cts.headIdx = tubeIdxPre;
+        cts.headType = CTS_Tube;
         endStates[tubeData.idxInEndStateArray] = cts;
+        tubes[tube1IdxSucc].idxInHeadEndStateArray = tubeData.idxInEndStateArray;
     }
     
     // consumer to tube
@@ -188,8 +218,12 @@ public class TubeSimulate : MonoBehaviour {
     {
         TubeData tube = tubes[tubeIdx];
         CanTakeState cts = endStates[tube.idxInEndStateArray];
-        cts.type = 2;
+        cts.type = CTS_Consumer;
         cts.idx = consumerIdx;
+
+        cts.headIdx = tubeIdx;
+        cts.headType = CTS_Tube;
+
         endStates[tube.idxInEndStateArray] = cts;
     }
 
@@ -382,6 +416,10 @@ public class TubeSimulate : MonoBehaviour {
                         
                         conv.clearCurrent();
                         converters[i] = conv;
+
+                        if (endStates[conv.idxHeadInEndStateArray].headType == CTS_Tube) {
+                            tubes[endStates[conv.idxHeadInEndStateArray].headIdx].onUnblocked();
+                        }
                     }
                     else
                     {
