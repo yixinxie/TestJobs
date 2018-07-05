@@ -28,7 +28,7 @@ public struct ConverterData
     //    idxInOutputStateArray = -1;
     //    pos = Vector3.zero;
     //}
-    public void init( float _speed, int idx, int outputIdx) {
+    public void init( float _speed, int outputIdx) {
         srcIds = new ushort[DefaultArraySize];
         srcRequired = new byte[DefaultArraySize];
         srcCurrent = new byte[DefaultArraySize];

@@ -44,7 +44,7 @@ public class TubeSimulate : MonoBehaviour {
     List<ConsumerData> consumers;
     /* debug */
     CustomSampler sampler;
-    float elapsedTime;
+    public float elapsedTime;
     bool pushed;
     public bool addnew;
     public int currentIndex0;
@@ -226,8 +226,8 @@ public class TubeSimulate : MonoBehaviour {
         int ret = converters.Count;
         converters.Add(new ConverterData());
         ConverterData conv = converters[ret];
-        conv.init(1f, 1, registerEndState());
-        conv.setItemRequirements(new ushort[] { 1, 2 }, new byte[] { 2, 3 }, 1, 1);
+        conv.init(99f, registerEndState());
+        conv.setItemRequirements(new ushort[] { 1, 2 }, new byte[] { 2, 2 }, 1, 1);
         converters[ret] = conv;
         return ret;
     }
@@ -266,7 +266,11 @@ public class TubeSimulate : MonoBehaviour {
             //}
             //tubes[0].push();
         }
-        float deltaTime = Time.deltaTime;
+        //float deltaTime = Time.deltaTime;
+        if(elapsedTime > 9.733f) {
+            int sdf = 0;
+        }
+        float deltaTime = 0.016667f;
         elapsedTime += deltaTime;
         generic[0].update(deltaTime);
         generic[1].update(deltaTime);
@@ -280,7 +284,7 @@ public class TubeSimulate : MonoBehaviour {
         }
         updateTubesJob = new TubeUpdateJob()
         {
-            deltaTime = Time.deltaTime,
+            deltaTime = deltaTime,
             dataArray = tubeUpdateData,
             outputOps = tempOps,
         };
