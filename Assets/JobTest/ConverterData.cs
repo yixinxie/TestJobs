@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public struct ConverterData
+public struct ConverterData : IPipe
 {
     public ushort[] srcIds;
     public byte[] srcRequired; // requirement
@@ -46,7 +46,7 @@ public struct ConverterData
         targetCount = _targetCount;
     }
 
-    public void startUpdate() {
+    void startUpdate() {
         GenericUpdateData d = TubeSimulate.generic[1].genericUpdateData[idxInUpdateArray];
         d.timeLeft = timeToMakeOne;
         TubeSimulate.generic[1].genericUpdateData[idxInUpdateArray] = d;
@@ -72,9 +72,10 @@ public struct ConverterData
             }
         }
         Debug.Log("converter starts!");
-        for (int i = 0; i < DefaultArraySize; ++i) {
-            srcCurrent[i] = 0;
-        }
+        //for (int i = 0; i < DefaultArraySize; ++i) {
+        //    srcCurrent[i] = 0;
+        //}
+        clearCurrent();
         startUpdate();
     }
 
@@ -82,6 +83,18 @@ public struct ConverterData
         for (int i = 0; i < DefaultArraySize; ++i) {
             srcCurrent[i] = 0;
         }
+    }
+    public void unblock() {
+        GenericUpdateData d = TubeSimulate.generic[1].genericUpdateData[idxInUpdateArray];
+        if (d.timeLeft >= 0.0f) return;
+
+    }
+    public void block() {
+
+    }
+    public void pop() {
+        clearCurrent();
+        startUpdate();
     }
 
     // visual related

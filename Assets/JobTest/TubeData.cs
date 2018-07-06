@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public struct TubeData
+public struct TubeData : IPipe
 {
     const int MaxElement = 16;
     public float speed;
@@ -97,17 +97,20 @@ public struct TubeData
         }
     }
     // while previously in a blocked state, the last element just got unblocked.
-    public void onUnblocked()
+    // this is called usually by the succeding node in the event that it just got unblocked.
+    
+    public void unblock()
     {
+        // we also need to check if the tube is indeed in a blocked state.
         if (currentIndex >= count - 1) return;
         TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
         for (int i = 0; i <= currentIndex; ++i)
         {
             positions[i] += d.current;
         }
-        currentIndex = count;
-        currentIndex -= 2;
         count--;
+        currentIndex = (short)(count - 1);
+        
         transfer();
     }
     // take a random element from the list. not usable yet!
@@ -174,12 +177,12 @@ public struct TubeData
     }
 
     // when an element is blocked.
-    public void saturate()
+    public void block()
     {
         if (currentIndex >= 0)
         {
             TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
-            for (int i = 0; i < currentIndex; ++i)
+            for (int i = 0; i <= currentIndex; ++i)
             {
                 positions[i] += d.current;
             }

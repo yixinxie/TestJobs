@@ -1,6 +1,10 @@
 ﻿using UnityEngine;
-
-public struct GeneratorData
+public interface IPipe {
+    void block();
+    void unblock();
+    void pop();
+}
+public struct GeneratorData : IPipe
 {
     public int remaining;
     public float timeToMakeOne;
@@ -22,13 +26,21 @@ public struct GeneratorData
         d.timeLeft = timeToMakeOne;
         TubeSimulate.generic[0].genericUpdateData[idxInUpdateArray] = d;
     }
-    public void onExpended()
+    public void pop()
     {
         remaining--;
         if(remaining > 0)
         {
             start();
         }
+    }
+    public void block() {
+
+    }
+    public void unblock() {
+        GenericUpdateData d = TubeSimulate.generic[0].genericUpdateData[idxInUpdateArray];
+        if(d.timeLeft <= 0.0f)
+            start();
     }
     // visual related
     public Vector3 pos;

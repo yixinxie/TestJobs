@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-public struct ConsumerData
+public struct ConsumerData : IPipe
 {
     public int[] objectCount;
     public int stackCount;
@@ -19,5 +19,13 @@ public struct ConsumerData
         Debug.LogFormat("{0} : {1}", itemId, objectCount[itemId]);
         return true;
     }
+    public void block() {
 
+    }
+    public void unblock() {
+
+    }
+    public void pop() {
+
+    }
 }

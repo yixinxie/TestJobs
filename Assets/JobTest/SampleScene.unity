@@ -140,15 +140,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 449df7092b6e9084c83c60d4275b031e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  arrayLength: 10000
+  arrayLength: 10
   outputStateCount: 0
+  elapsedTime: 0
   addnew: 0
   currentIndex0: 0
   count0: 0
   dbgArray: []
-  toggleEndState: 0
-  endState0: 0
-  sdf: 0
+  endState_Open: 0
 --- !u!4 &61604658
 Transform:
   m_ObjectHideFlags: 0
