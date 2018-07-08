@@ -262,7 +262,6 @@ public partial class %name%{
             //Attribute
             Replicated[] attributes = fieldInfo.GetCustomAttributes(typeof(Replicated), true) as Replicated[];
             if (attributes == null || attributes.Length == 0) continue;
-            Replicated repAttr = attributes[0];
 
             string ins = null;
             string insSwitch = null;

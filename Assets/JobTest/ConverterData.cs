@@ -11,7 +11,7 @@ public struct ConverterData : IPipe
 
     public float timeToMakeOne;
     public int idxInUpdateArray; // index in tubeOutputUpdateData
-    public int idxHeadInEndStateArray;
+    public int headArrayIdx;
     public int idxInEndStateArray;
     public const int DefaultArraySize = 3;
     //public ConverterData(float _speed)
@@ -35,7 +35,8 @@ public struct ConverterData : IPipe
 
         timeToMakeOne = _speed;
         idxInUpdateArray = TubeSimulate.generic[1].addEntity();
-        idxInEndStateArray = outputIdx;
+        headArrayIdx = outputIdx;
+        //idxInEndStateArray = outputIdx;
     }
     public void setItemRequirements(ushort[] _srcIds, byte[] _srcReq, ushort _targetId, byte _targetCount) {
         for(int i = 0; i < _srcIds.Length; ++i) {

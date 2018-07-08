@@ -10,8 +10,8 @@ public struct TubeData : IPipe
     public short count, currentIndex;
     public ushort itemId;
     public int idxInUpdateArray; // index in tubeOutputUpdateData
-    public int idxInEndStateArray; // index of the end state.
-    public int idxInHeadEndStateArray; // index of the end state.
+    public int tailArrayIdx; // index of the end state.
+    public int headArrayIdx; // index of the end state.
 
     // visual related
     public Vector3 from;
@@ -43,7 +43,7 @@ public struct TubeData : IPipe
         itemHalfWidth = 0.5f;
         count = 0;
         idxInUpdateArray = -1;
-        idxInEndStateArray = -1;
+        tailArrayIdx = -1;
         currentIndex = -1;
     }
 

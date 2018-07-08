@@ -3,16 +3,16 @@ public struct ConsumerData : IPipe
 {
     public int[] objectCount;
     public int stackCount;
-    public int testint;
+    public int headArrayIdx;
     public const int MaxItemCount = 64; // max item variety
-    public void init(int _testint)
+    public void init(int idxHead)
     {
         objectCount = new int[MaxItemCount];
         for(int i = 0; i < MaxItemCount; ++i)
         {
             objectCount[i] = 0;
         }
-        testint = _testint;
+        headArrayIdx = idxHead;
     }
     public bool attemptToTake(int itemId) {
         objectCount[itemId]++;

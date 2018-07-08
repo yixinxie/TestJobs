@@ -10,14 +10,13 @@ public struct GeneratorData : IPipe
     public float timeToMakeOne;
     public ushort itemId;
     public int idxInUpdateArray; // index in generalUpdateData
-    public int idxInEndStateArray;
-    public void init(ushort _itemId, float _speed, int _remaining, int idx, int outputIdx)
+    public int tailArrayIdx;
+    public void init(ushort _itemId, float _speed, int _remaining)
     {
         remaining = _remaining;
         timeToMakeOne = _speed;
         itemId = _itemId;
         idxInUpdateArray = TubeSimulate.generic[0].addEntity();
-        idxInEndStateArray = outputIdx;
     }
 
     public void start()
