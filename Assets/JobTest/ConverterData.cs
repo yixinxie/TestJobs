@@ -12,7 +12,7 @@ public struct ConverterData : IPipe
     public float timeToMakeOne;
     public int idxInUpdateArray; // index in tubeOutputUpdateData
     public int headArrayIdx;
-    public int idxInEndStateArray;
+    public int tailArrayIdx;
     public const int DefaultArraySize = 3;
     //public ConverterData(float _speed)
     //{
@@ -47,7 +47,8 @@ public struct ConverterData : IPipe
         targetCount = _targetCount;
     }
 
-    void startUpdate() {
+    public void startUpdate() {
+        clearCurrent();
         GenericUpdateData d = TubeSimulate.generic[1].genericUpdateData[idxInUpdateArray];
         d.timeLeft = timeToMakeOne;
         TubeSimulate.generic[1].genericUpdateData[idxInUpdateArray] = d;
@@ -60,26 +61,35 @@ public struct ConverterData : IPipe
         }
         return false;
     }
-    public void push(ushort itemId) {
-        Debug.Log("receives " + itemId);
+    public bool push(ushort itemId) {
+        //Debug.Log("receives " + itemId);
         for (int i = 0; i < DefaultArraySize; ++i) {
             if (srcIds[i] == itemId) {
                 srcCurrent[i]++;
             }
         }
-        for (int i = 0; i < DefaultArraySize; ++i) {
-            if (srcRequired[i] != srcCurrent[i]) {
-                return;
-            }
+        if (allMet() == false) return false;
+
+        GenericUpdateData d = TubeSimulate.generic[1].genericUpdateData[idxInUpdateArray];
+        if(d.timeLeft > 0.0f) {
+            return false;
         }
         Debug.Log("converter starts!");
         //for (int i = 0; i < DefaultArraySize; ++i) {
         //    srcCurrent[i] = 0;
         //}
-        clearCurrent();
+        
         startUpdate();
+        return true;
     }
-
+    public bool allMet() {
+        for (int i = 0; i < DefaultArraySize; ++i) {
+            if (srcRequired[i] != srcCurrent[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
     public void clearCurrent() {
         for (int i = 0; i < DefaultArraySize; ++i) {
             srcCurrent[i] = 0;
@@ -94,7 +104,7 @@ public struct ConverterData : IPipe
 
     }
     public void pop() {
-        clearCurrent();
+
         startUpdate();
     }
 

@@ -67,10 +67,7 @@ public struct TubeData : IPipe
             if (positions[0] + d.current - itemHalfWidth * 2f >= 0.0f)
             {
                 // refresh distances upto currentIndex.
-                for (int i = 0; i <= currentIndex; ++i)
-                {
-                    positions[i] += d.current;
-                }
+                updatePositions();
                 d.boundary -= d.current;
                 d.current = 0.0f;
                 TubeSimulate.self.tubeUpdateData[idxInUpdateArray] = d;
@@ -103,12 +100,8 @@ public struct TubeData : IPipe
     {
         // we also need to check if the tube is indeed in a blocked state.
         if (currentIndex >= count - 1) return;
-        TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
-        for (int i = 0; i <= currentIndex; ++i)
-        {
-            positions[i] += d.current;
-        }
-        count--;
+        updatePositions();
+        //count--;
         currentIndex = (short)(count - 1);
         
         transfer();
@@ -165,15 +158,17 @@ public struct TubeData : IPipe
     // when an element can be removed.
     public void pop()
     {
-        TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
-        for (int i = 0; i < currentIndex; ++i)
-        {
-            positions[i] += d.current;
-        }
+        updatePositions();
         currentIndex--;
         count--;
         transfer();
         
+    }
+    private void updatePositions() {
+        TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
+        for (int i = 0; i <= currentIndex; ++i) {
+            positions[i] += d.current;
+        }
     }
 
     // when an element is blocked.
@@ -181,12 +176,7 @@ public struct TubeData : IPipe
     {
         if (currentIndex >= 0)
         {
-            TubeUpdateData d = TubeSimulate.self.tubeUpdateData[idxInUpdateArray];
-            for (int i = 0; i <= currentIndex; ++i)
-            {
-                positions[i] += d.current;
-            }
-            positions[currentIndex] += d.boundary;
+            updatePositions();
             currentIndex--;
             transfer();
         }
