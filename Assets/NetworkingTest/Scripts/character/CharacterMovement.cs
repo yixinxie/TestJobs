@@ -29,6 +29,9 @@ public partial class CharacterMovement : ReplicatedProperties {
         transform.position = pos;
         transform.eulerAngles = rot;
     }
+    public void onPossess() {
+        lastMousePos = Input.mousePosition;
+    }
     public void LateUpdate() {
         //transform.po
         if (role == GameObjectRoles.Autonomous) {
@@ -52,42 +55,47 @@ public partial class CharacterMovement : ReplicatedProperties {
         }
     }
     public bool grounded;
+    Vector3 moveInputWhenJump;
+    //Vector3 thisVelocity;
     void updateMovement(float deltaTime) {
         // update movement.
-        RaycastHit hitResult;
-        bool isGrounded;
-        isGrounded = Physics.SphereCast(transform.position, cc.radius, Vector3.down, out hitResult, skinWidth * 2f, movementCollisionLayer);
         Debug.DrawLine(transform.position, transform.position + Vector3.down * skinWidth * 2f, Color.green);
-
+        cc.Move(velocity * deltaTime);
+        bool jumpPressed = false;
+        jumpPressed = Input.GetKey(KeyCode.Space);
         float verticalInput = Input.GetAxisRaw("Vertical");
         float horizontalInput = Input.GetAxisRaw("Horizontal");
         Vector3 moveInput = transform.forward * verticalInput + transform.right * horizontalInput;
         moveInput.Normalize();
-        Vector3 thisVelocity = Vector3.zero;
-        grounded = cc.isGrounded;
         if (cc.isGrounded) {
-            thisVelocity = moveInput * speed;
-            if (Input.GetKeyDown(KeyCode.Space)) {
-                thisVelocity += Vector3.up * 3.8f;
-                aerialVelocity = thisVelocity;
-
-            }
-            cc.Move(thisVelocity * deltaTime);
             
+            velocity = moveInput * speed;
+            if (jumpPressed) {
+                velocity += Vector3.up * 4.8f;
+                moveInputWhenJump = moveInput;
+            }
         }
         else {
-            //moveInput *= 0.5f;
 
-            aerialVelocity.y -= gravity * deltaTime;
-            cc.Move(aerialVelocity * deltaTime);
+            
+            //velocity = moveInput * speed * 0.2f;
+            velocity.y -= gravity * deltaTime;
+            if(Vector3.Dot(moveInput, moveInputWhenJump) < 0.0f) {
+                velocity.x = moveInput.x * speed * 0.35f;
+                velocity.z = moveInput.z * speed * 0.35f;
+            }
+            cc.Move(velocity * deltaTime);
         }
-        
-        
+        if(cc.isGrounded != grounded) {
+            Debug.Log("new state " + cc.isGrounded);
+        }
+        grounded = cc.isGrounded;
+
 
         // jump
 
     }
-    Vector3 aerialVelocity;
+    Vector3 velocity;
     void updateLook(float deltaTime) {
         Vector3 mousepos = Input.mousePosition;
         Vector3 diff = mousepos - lastMousePos;
@@ -138,3 +146,4 @@ public partial class CharacterMovement : ReplicatedProperties {
         cartesianCoords.z = radiusOnPlane * Mathf.Sin(polar.x);
     }
 }
+

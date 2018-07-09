@@ -31,12 +31,14 @@ public partial class FPSCharacter : ReplicatedProperties {
             possess();
     }
     private void Start() {
+        // disable this in network mode.
         possess();
     }
     public void possess() {
         cameraTrans = Camera.main.GetComponent<CameraUtils>();
         cameraTrans.lerpToAttach(charMovement.TPCameraTrans, 0.2f);
         Cursor.visible = false;
+        charMovement.onPossess();
         //isFirstPersonView = false;
         //lastMousePos = Input.mousePosition;
         //enabled = true;
