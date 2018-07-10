@@ -50,7 +50,7 @@ public class ClientTest : MonoBehaviour
     private void Start() {
         byte error;
         //connectionId = NetworkTransport.Connect(socketId, serverAddr, serverPort, 0, out error);
-        ConnectionSimulatorConfig csc = new ConnectionSimulatorConfig(30, 200, 30, 200, 0.2f);
+        ConnectionSimulatorConfig csc = new ConnectionSimulatorConfig(160, 200, 160, 200, 0.15f);
         connectionId = NetworkTransport.ConnectWithSimulator(socketId, serverAddr, serverPort, 0, out error, csc);
         Debug.Log("Connected to server. ConnectionId: " + connectionId + " error:" + (int)error);
     }

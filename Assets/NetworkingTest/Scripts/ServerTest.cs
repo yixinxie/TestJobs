@@ -105,14 +105,7 @@ public class ServerTest : MonoBehaviour {
             gosi.obj = pcgo;
             gameObjectsByOwner[idx].Add(gosi);
         }
-        //for (int i = 0; i < playerStates.Count; ++i) {
-        //    if (playerStates[i] == connId) {
-        //        GameObjectSpawnInfo gosi = new GameObjectSpawnInfo();
-        //        gosi.path = path;
-        //        gosi.obj = pcgo;
-        //        gameObjectsByOwner[i].Add(gosi);
-        //    }
-        //}
+        
         return pcgo;
     }
     GameObject spawnPrefabOnServer(int connId, string prefabPath, out int[] comp_ids)
@@ -188,9 +181,9 @@ public class ServerTest : MonoBehaviour {
             if(dataSize >= bufferSize) {
                 Debug.LogWarning("the data received exceeds the buffer size!");
             }
-            if (channelId == unreliableCHN) {
-                Debug.Log("unreliable: " + dataSize);
-            }
+            //if (channelId == unreliableCHN) {
+            //    Debug.Log("unreliable: " + dataSize);
+            //}
             switch (recData) {
                 case NetworkEventType.Nothing:         //1
                     loop = false;

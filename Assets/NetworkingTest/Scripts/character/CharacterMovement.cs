@@ -7,6 +7,8 @@ public partial class CharacterMovement : ReplicatedProperties {
     public float height;
     public float speed = 3f;
     public float gravity = 9.8f;
+    [Replicated]
+    public float serverTime;
     public Transform TPCameraTrans;
     Vector3 lastMousePos;
     float skinWidth;
@@ -22,36 +24,64 @@ public partial class CharacterMovement : ReplicatedProperties {
     }
     // Use this for initialization
     void Start() {
-
+        if (ServerTest.self != null) {
+            serverTime = Time.realtimeSinceStartup;
+            rep_serverTime();
+        }
     }
+    float localTime;
+    float timeDiff;
+    [OnRep(forVar = "serverTime")]
+    void onrepServerTime(float oldVal) {
+        localTime = Time.realtimeSinceStartup;
+        timeDiff = serverTime - localTime;
+        Debug.Log("server time " + serverTime);
+    }
+    Vector3 lastKnownPos;
+    Vector3 lastKnownRot;
+    Vector3 lastKnownFrameVelocity;
+    byte lastKnownInterpMode;
+    float lastKnownTimestamp;
     [RPC(isServer = 1, Reliable = false)]
-    public void ReceiveUpdate(Vector3 pos, Vector3 rot) {
-        transform.position = pos;
-        transform.eulerAngles = rot;
+    public void ReceiveUpdate(Vector3 pos, Vector3 rot, float estTime, Vector3 frameVelocity, byte interpolationMode) {
+        //transform.position = pos;
+        //transform.eulerAngles = rot;
+        lastKnownPos = pos;
+        lastKnownRot = rot;
+        lastKnownFrameVelocity = frameVelocity;
+        lastKnownInterpMode = interpolationMode;
+        lastKnownTimestamp = estTime;
     }
     public void onPossess() {
         lastMousePos = Input.mousePosition;
     }
-    public void LateUpdate() {
-        //transform.po
-        if (role == GameObjectRoles.Autonomous) {
-            //ClientTest.self.rpcBegin(goId, 16, SerializedBuffer.RPCMode_ToServer);
-            //ClientTest.self.rpcAddParam(transform.position);
-            //ClientTest.self.rpcAddParam(transform.eulerAngles);
-            //ClientTest.self.rpcEnd();
-            ReceiveUpdate_OnServer(transform.position, transform.eulerAngles);
-        }
-        else if (role == GameObjectRoles.Authority) {
 
-        }
-        else if (role == GameObjectRoles.SimulatedProxy) {
-
-        }
-    }
+    public Vector3 frameVelocity;
     public void update(float deltaTime) {
-        if (role != GameObjectRoles.Authority || role != GameObjectRoles.SimulatedProxy) {
+        if (role == GameObjectRoles.Autonomous) {
+            Vector3 preUpdatePos = transform.position;
             updateMovement(deltaTime);
             updateLook(deltaTime);
+            frameVelocity = transform.position - preUpdatePos;
+            frameVelocity /= deltaTime;
+
+            float sinceFirstRep = Time.realtimeSinceStartup + timeDiff;
+            ReceiveUpdate_OnServer(transform.position, transform.eulerAngles, sinceFirstRep, frameVelocity, cc.isGrounded ? (byte)1 : (byte)0);
+        }
+        else if (role == GameObjectRoles.Authority) {
+            float timePassedSinceLastKnown = Time.realtimeSinceStartup - lastKnownTimestamp;
+            Vector3 predictedPos = Vector3.zero;
+            if (lastKnownInterpMode == 1) { // linear interpolation
+                predictedPos = timePassedSinceLastKnown * lastKnownFrameVelocity + lastKnownPos;
+                //Debug.Log("time passed:" + timePassedSinceLastKnown);
+
+            }
+            else {
+                // lerp to.
+                predictedPos = lastKnownPos;
+            }
+            transform.position = predictedPos;
+            transform.eulerAngles = lastKnownRot;
         }
     }
     public bool grounded;
@@ -68,7 +98,7 @@ public partial class CharacterMovement : ReplicatedProperties {
         Vector3 moveInput = transform.forward * verticalInput + transform.right * horizontalInput;
         moveInput.Normalize();
         if (cc.isGrounded) {
-            
+
             velocity = moveInput * speed;
             if (jumpPressed) {
                 velocity += Vector3.up * 4.8f;
@@ -77,17 +107,15 @@ public partial class CharacterMovement : ReplicatedProperties {
         }
         else {
 
-            
+
             //velocity = moveInput * speed * 0.2f;
             velocity.y -= gravity * deltaTime;
-            if(Vector3.Dot(moveInput, moveInputWhenJump) < 0.0f) {
+            if(moveInputWhenJump.magnitude < 0.01f || Vector3.Dot(moveInput, moveInputWhenJump) < 0.0f) {
                 velocity.x = moveInput.x * speed * 0.35f;
                 velocity.z = moveInput.z * speed * 0.35f;
             }
+            // what????
             cc.Move(velocity * deltaTime);
-        }
-        if(cc.isGrounded != grounded) {
-            Debug.Log("new state " + cc.isGrounded);
         }
         grounded = cc.isGrounded;
 

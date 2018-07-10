@@ -51,9 +51,14 @@ public class RPGMotor : MonoBehaviour
     }
 
     float lastGroundTouch = 0f;
-
-    HashSet<string> expiredForces = new HashSet<string>();
-    Dictionary<string, Force> forces = new Dictionary<string, Force>();
+    public enum ForceTypes : byte {
+        Jump,
+        JumpMomentum,
+        Rigidbody,
+        FallMomentum
+    }
+    HashSet<int> expiredForces = new HashSet<int>();
+    Dictionary<int, Force> forces = new Dictionary<int, Force>();
 
     [SerializeField]
     bool displayConfigGizmos = true;
@@ -151,35 +156,35 @@ public class RPGMotor : MonoBehaviour
         target.rotation = Quaternion.Euler(0f, angles, 0f);
     }
 
-    public void AddForce(string name, Vector3 from, Vector3 to, float time)
+    public void AddForce(ForceTypes forceType, Vector3 from, Vector3 to, float time)
     {
-        AddForce(name, from, to, time, null);
+        AddForce(forceType, from, to, time, null);
     }
 
-    public void AddForce(string name, Vector3 from, Vector3 to, float time, Action<Force> onDone)
+    public void AddForce(ForceTypes forceType, Vector3 from, Vector3 to, float time, Action<Force> onDone)
     {
-        if (!String.IsNullOrEmpty(name))
+        //if (!String.IsNullOrEmpty(name))
         {
-            forces[name] = new Force { From = from, To = to, Time = time, Elapsed = 0, OnDone = onDone };
+            forces[(int)forceType] = new Force { From = from, To = to, Time = time, Elapsed = 0, OnDone = onDone };
 
             // We need to remove any pending expires on this force
-            expiredForces.Remove(name);
+            expiredForces.Remove((int)forceType);
         }
     }
 
-    public void RemoveForce(string name)
+    public void RemoveForce(ForceTypes forceType)
     {
         if (!String.IsNullOrEmpty(name))
         {
-            expiredForces.Add(name);
+            expiredForces.Add((int)forceType);
         }
     }
 
-    public Force GetForce(string name)
+    public Force GetForce(ForceTypes forceType)
     {
         Force f;
 
-        if (forces.TryGetValue(name, out f))
+        if (forces.TryGetValue((int)forceType, out f))
         {
             return f;
         }
@@ -195,12 +200,12 @@ public class RPGMotor : MonoBehaviour
             IsJumping = true;
 
             // Add jumping force
-            AddForce("Jump", jumpForce, Vector3.zero, jumpTime, JumpDone);
+            AddForce(ForceTypes.Jump, jumpForce, Vector3.zero, jumpTime, JumpDone);
 
             // If we are moving, we should add a movement force also
             if (MovementInput != Vector3.zero)
             {
-                AddForce("JumpMomentum", MovementInput.normalized * 4f, MovementInput.normalized * 4f, jumpTime);
+                AddForce(ForceTypes.JumpMomentum, MovementInput.normalized * 4f, MovementInput.normalized * 4f, jumpTime);
             }
 
             InvokeCallback(OnJump);
@@ -221,11 +226,11 @@ public class RPGMotor : MonoBehaviour
 
     void RemoveExpiredForces()
     {
-        foreach (string name in expiredForces)
+        foreach (int enumIdx in expiredForces)
         {
-            if (forces.Remove(name) && displayDebugInfo)
+            if (forces.Remove(enumIdx) && displayDebugInfo)
             {
-                Debug.Log("[RPGMotor] Removing Force: " + name);
+                //Debug.Log("[RPGMotor] Removing Force: " + enumIdx);
             }
         }
 
@@ -234,15 +239,15 @@ public class RPGMotor : MonoBehaviour
 
     void JumpDone(Force f)
     {
-        Force jumpMomentum = GetForce("JumpMomentum");
+        Force jumpMomentum = GetForce(ForceTypes.JumpMomentum);
 
         IsJumping = false;
-        RemoveForce("Jump");
-        RemoveForce("JumpMomentum");
+        RemoveForce(ForceTypes.Jump);
+        RemoveForce(ForceTypes.JumpMomentum);
 
         if ((!HasGround || !CurrentGround.IsTouching) && jumpMomentum != null)
         {
-            AddForce("FallMomentum", jumpMomentum.From, Vector3.zero, 1f);
+            AddForce(ForceTypes.FallMomentum, jumpMomentum.From, Vector3.zero, 1f);
         }
     }
 
@@ -273,13 +278,15 @@ public class RPGMotor : MonoBehaviour
                     float t = (90f - a) / 90f;
                     float m = rbody.velocity.magnitude;
 
-                    AddForce("Rigidbody#" + rbody.GetInstanceID(), m * d * rigidbodyTransferAmount * t, Vector3.zero, rigidbodyTransferTime);
+                    //AddForce("Rigidbody#" + rbody.GetInstanceID(), m * d * rigidbodyTransferAmount * t, Vector3.zero, rigidbodyTransferTime);
+                    Debug.LogWarning("this code path has not been dealt with.");
+                    AddForce(ForceTypes.Rigidbody, m * d * rigidbodyTransferAmount * t, Vector3.zero, rigidbodyTransferTime);
                 }
             }
         }
     }
 
-    void Start()
+    void Awake()
     {
         if (target == null)
         {
@@ -337,10 +344,11 @@ public class RPGMotor : MonoBehaviour
 
     void LateUpdate()
     {
+        Vector3 cachedPos = target.position;
         // If we have a ground and touching it, we should make sure to always follow it when it moves
         if (HasGround && CurrentGround.IsTouching && CurrentGround.Offset != Vector3.zero)
         {
-            target.position = CurrentGround.Transform.position + CurrentGround.Offset;
+            cachedPos = CurrentGround.Transform.position + CurrentGround.Offset;
         }
 
         float delta = Time.deltaTime;
@@ -471,7 +479,7 @@ public class RPGMotor : MonoBehaviour
 
                     if (HasGround && !CurrentGround.IsTouching)
                     {
-                        AddForce("FallMomentum", MovementInput.normalized * MovementSpeed, Vector3.zero, 1f);
+                        AddForce(ForceTypes.FallMomentum, MovementInput.normalized * MovementSpeed, Vector3.zero, 1f);
                     }
                 }
                 else
@@ -609,7 +617,7 @@ public class RPGMotor : MonoBehaviour
     {
         RemoveExpiredForces();
 
-        foreach(KeyValuePair<string, Force> kvp in forces.Select(x => x).ToList())
+        foreach(KeyValuePair<int, Force> kvp in forces.Select(x => x).ToList())
         {
             // 
             Force f = kvp.Value;
@@ -741,7 +749,7 @@ public class RPGMotor : MonoBehaviour
             }
 
             ClampToGround();
-            RemoveForce("FallMomentum");
+            RemoveForce(ForceTypes.FallMomentum);
             lastGroundTouch = Time.time;
         }
     }

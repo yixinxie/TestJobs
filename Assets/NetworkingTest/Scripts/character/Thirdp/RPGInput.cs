@@ -75,7 +75,7 @@ public class RPGInput : MonoBehaviour
     public bool IsRunning { get; private set; }
     public bool MouseLook { get; private set; }
 
-    void Start()
+    void Awake()
     {
         motor = GetComponent<RPGMotor>();
     }
@@ -93,15 +93,15 @@ public class RPGInput : MonoBehaviour
         bool mouseLookDown = Input.GetMouseButton((int)mouseLookButton) && enableMouseLook;
         bool mouseLookPressed = Input.GetMouseButtonDown((int)mouseLookButton) && enableMouseLook;
         bool bothMiceDown = Input.GetMouseButton((int)mouseRunAndLookButton) && mouseLookDown && enableRunAndLook;
-        bool autorunPressed = Input.GetMouseButtonDown((int)autorunToggleButton);
+        //bool autorunPressed = Input.GetMouseButtonDown((int)autorunToggleButton);
 
         IsRunning = !walkKeyDown;
         MouseLook = mouseLookDown;
 
-        if (autorunPressed)
-        {
-            autorun = !autorun;
-        }
+        //if (autorunPressed)
+        //{
+        //    autorun = !autorun;
+        //}
 
         if (autorun || forwardKeyDown || bothMiceDown)
         {
@@ -160,24 +160,24 @@ public class RPGInput : MonoBehaviour
             autorun = false;
         }
 
-        // If we're moving, rotate camera behind us
-        if (motor.MovementInput != Vector3.zero)
-        {
-            RPGCamera.Instance.RotateCameraBehindTarget = cameraRotateBehindOnMove;
-        }
+        //// If we're moving, rotate camera behind us
+        //if (motor.MovementInput != Vector3.zero)
+        //{
+        //    RPGCamera.Instance.RotateCameraBehindTarget = cameraRotateBehindOnMove;
+        //}
 
-        // If we're holding down mouse look, lock camera
-        if (mouseLookDown)
-        {
-            RPGCamera.Instance.LockCameraBehindTarget = cameraLockBehindOnMouseLook;
-            motor.Yaw(Input.GetAxisRaw("Mouse X") * Time.smoothDeltaTime * mouseTurnSpeed);
-        }
+        //// If we're holding down mouse look, lock camera
+        //if (mouseLookDown)
+        //{
+        //    RPGCamera.Instance.LockCameraBehindTarget = cameraLockBehindOnMouseLook;
+        //    motor.Yaw(Input.GetAxisRaw("Mouse X") * Time.smoothDeltaTime * mouseTurnSpeed);
+        //}
 
-        // If we pressed mouse look, set rotation
-        if (mouseLookPressed)
-        {
-            Camera cam = RPGCamera.Instance.Camera;
-            motor.SetYaw(RPGInputUtils.SignedAngle(Vector3.forward, cam.transform.forward, Vector3.up));
-        }
+        //// If we pressed mouse look, set rotation
+        //if (mouseLookPressed)
+        //{
+        //    Camera cam = RPGCamera.Instance.Camera;
+        //    motor.SetYaw(RPGInputUtils.SignedAngle(Vector3.forward, cam.transform.forward, Vector3.up));
+        //}
     }
 }

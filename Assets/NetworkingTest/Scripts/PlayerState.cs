@@ -7,32 +7,22 @@ public partial class PlayerState : ReplicatedProperties {
     // Use this for initialization
     public string characterPrefabPath;
     [Replicated]
-    public int testVal;
-    [Replicated]
-    public float testFloat;
+    public float serverTime;
     // onrep callbacks
     /** call this in Awake() */
     protected override void Awake() {
         base.Awake();
     }
-    [OnRep(forVar = "testFloat2")]
-    private void testFloatChanged(float oldfloat) {
-    }
-
-    [RPC]
-    public void testRPC(int testint, float testfloat)
-    {
+    [OnRep(forVar = "serverTime")]
+    private void onrep_ServerTime(float oldfloat) {
 
     }
 
-    [RPC(isServer = 0)]
-    public void testRPCtwo(int testint, float testfloat, float float2)
-    {
-
-    }
     private void Start() {
         if(ServerTest.self != null) {
-            ServerTest.self.spawnReplicatedGameObject(owner, characterPrefabPath);
+            GameObject psGO = ServerTest.self.spawnReplicatedGameObject(owner, characterPrefabPath);
+            serverTime = Time.realtimeSinceStartup;
+            rep_serverTime();
         }
     }
 }

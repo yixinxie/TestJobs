@@ -113,7 +113,7 @@ public class TestGen {
             ins.Replace("%body%", serializeText.ToString());
 
             ret.AppendLine(ins.ToString());
-            Debug.Log(ins);
+            //Debug.Log(ins);
             StringBuilder tmpsb = new StringBuilder(RpcSwitchCaseTmpl);
             string paramListText;
             string invokeVarDelc = generateRPCInvokeString(paramInfo, out paramListText);
@@ -157,6 +157,8 @@ public class TestGen {
                 paramText.Append(paramInfo[j].ParameterType.ToString() + " " + paramInfo[j].Name + " = ClientTest.deserializeToFloat(src, ref offset);");
             else if (pInfo.ParameterType.Equals(typeof(Vector3)))
                 paramText.Append(paramInfo[j].ParameterType.ToString() + " " + paramInfo[j].Name + " = ClientTest.deserializeToVector3(src, ref offset);");
+            else if (pInfo.ParameterType.Equals(typeof(byte)))
+                paramText.Append(paramInfo[j].ParameterType.ToString() + " " + paramInfo[j].Name + " = ClientTest.deserializeToByte(src, ref offset);");
 
             paramListSB.Append(paramInfo[j].Name);
             if (j < paramInfo.Length -1)

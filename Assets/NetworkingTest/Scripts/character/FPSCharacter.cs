@@ -32,7 +32,7 @@ public partial class FPSCharacter : ReplicatedProperties {
     }
     private void Start() {
         // disable this in network mode.
-        possess();
+        //possess();
     }
     public void possess() {
         cameraTrans = Camera.main.GetComponent<CameraUtils>();
@@ -53,7 +53,7 @@ public partial class FPSCharacter : ReplicatedProperties {
     public FPSCharacter drone;
     // Update is called once per frame
     void Update () {
-        float deltaTime = Time.deltaTime;
+        float deltaTime = Time.unscaledDeltaTime;
         // update rotation
         charMovement.update(deltaTime);
         updateMouseClick();
