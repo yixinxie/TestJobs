@@ -67,17 +67,30 @@
     <Compile Include="Assets\JobTest\TestArray.cs" />
     <Compile Include="Assets\JobTest\TubeData.cs" />
     <Compile Include="Assets\JobTest\TubeSimulate.cs" />
+    <Compile Include="Assets\MeshBaker\Examples\BakeTexturesAtRuntime\BakeTexturesAtRuntime.cs" />
+    <Compile Include="Assets\MeshBaker\Examples\BatchPrepareObjectsForDynamicBatching\MB_BatchPrepareObjectsForDynamicBatchingDescription.cs" />
+    <Compile Include="Assets\MeshBaker\Examples\CharacterCustomization\MB_SwapShirts.cs" />
+    <Compile Include="Assets\MeshBaker\Examples\PrepareObjectsForDynamicBatching\MB_PrepareObjectsForDynamicBatchingDescription.cs" />
+    <Compile Include="Assets\MeshBaker\Examples\SceneDynamicAddDelete\MB_DynamicAddDeleteExample.cs" />
+    <Compile Include="Assets\MeshBaker\Examples\SceneRuntimeExample\MB_Example.cs" />
+    <Compile Include="Assets\MeshBaker\Examples\SceneRuntimeExample\MB_ExampleMover.cs" />
+    <Compile Include="Assets\MeshBaker\Examples\SceneRuntimeExample\MB_ExampleSkinnedMeshDescription.cs" />
+    <Compile Include="Assets\MeshBaker\Examples\SkinnedMeshRenderer\MB_SkinnedMeshSceneController.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB2_UpdateSkinnedMeshBoundsFromBones.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB2_UpdateSkinnedMeshBoundsFromBounds.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB3_BatchPrefabBaker.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB3_BoneWeightCopier.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB3_DisableHiddenAnimations.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB3_MBVersionConcrete.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB3_MeshBaker.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB3_MeshBakerCommon.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB3_MeshBakerGrouper.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB3_MeshBakerRoot.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB3_MultiMeshBaker.cs" />
+    <Compile Include="Assets\MeshBaker\scripts\MB3_TextureBaker.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\character\CameraUtils.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\character\CharacterMovement.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\character\FPSCharacter.cs" />
-    <Compile Include="Assets\NetworkingTest\Scripts\character\Thirdp\RPGAnim.cs" />
-    <Compile Include="Assets\NetworkingTest\Scripts\character\Thirdp\RPGCamera.cs" />
-    <Compile Include="Assets\NetworkingTest\Scripts\character\Thirdp\RPGCollisions.cs" />
-    <Compile Include="Assets\NetworkingTest\Scripts\character\Thirdp\RPGInput.cs" />
-    <Compile Include="Assets\NetworkingTest\Scripts\character\Thirdp\RPGInputUtils.cs" />
-    <Compile Include="Assets\NetworkingTest\Scripts\character\Thirdp\RPGMesh.cs" />
-    <Compile Include="Assets\NetworkingTest\Scripts\character\Thirdp\RPGMotor.cs" />
-    <Compile Include="Assets\NetworkingTest\Scripts\character\Thirdp\RPGTriangleTree.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\CharacterMovement_generated.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\ClientTest.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\FPSCharacter_generated.cs" />
@@ -88,6 +101,11 @@
     <Compile Include="Assets\NetworkingTest\Scripts\ReplicatedProperties.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\SerializedBuffer.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\ServerTest.cs" />
+    <Compile Include="Assets\RenderTest\ChangeMat.cs" />
+    <None Include="Assets\MeshBaker\Examples\CharacterCustomization\CreditForModel.txt" />
+    <None Include="Assets\MeshBaker\Resources\Shaders\NormalMapShader.shader" />
+    <None Include="Assets\MeshBaker\Release Notes.txt" />
+    <None Include="Assets\MeshBaker\Resources\Shaders\AlbedoShader.shader" />
     <Reference Include="UnityEditor.StandardEvents">
       <HintPath>E:/TestJobs/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
     </Reference>
@@ -297,6 +315,9 @@
     </Reference>
     <Reference Include="UnityEngine.StandardEvents">
       <HintPath>C:/Users/admin/AppData/Local/Unity/cache/packages/packages.unity.com/com.unity.standardevents@1.0.13/UnityEngine.StandardEvents.dll</HintPath>
+    </Reference>
+    <Reference Include="MeshBakerCore">
+      <HintPath>E:/TestJobs/Assets/MeshBaker/scripts/MeshBakerCore.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib">
       <HintPath>D:/Unity/201811f1/Editor/Data/MonoBleedingEdge/lib/mono/unity/mscorlib.dll</HintPath>
