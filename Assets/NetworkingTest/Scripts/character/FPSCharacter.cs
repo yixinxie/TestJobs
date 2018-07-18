@@ -5,7 +5,6 @@ using UnityEngine;
 public partial class FPSCharacter : ReplicatedProperties {
     CharacterMovement charMovement;
     public Transform MeshGO;
-    public float speed = 2.5f;
     //public WeaponController currentWeapon;
     public Transform FPCameraTrans;
     public float gravity = 9.8f;
@@ -53,7 +52,7 @@ public partial class FPSCharacter : ReplicatedProperties {
     public FPSCharacter drone;
     // Update is called once per frame
     void Update () {
-        float deltaTime = Time.unscaledDeltaTime;
+        float deltaTime = Time.fixedDeltaTime;
         // update rotation
         charMovement.update(deltaTime);
         updateMouseClick();

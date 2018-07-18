@@ -43,29 +43,44 @@ public partial class CharacterMovement : ReplicatedProperties {
     byte lastKnownInterpMode;
     float lastKnownTimestamp;
     [RPC(isServer = 1, Reliable = false)]
-    public void ReceiveUpdate(Vector3 pos, Vector3 rot, float estTime, Vector3 frameVelocity, byte interpolationMode) {
-        //transform.position = pos;
-        //transform.eulerAngles = rot;
+    public void ReceiveUpdate(Vector3 pos, Vector3 rot, float estTime, Vector3 _frameVelocity, byte interpolationMode) {
+        //Debug.Log("rpc diff: " + (estTime - lastKnownTimestamp));
+
         lastKnownPos = pos;
         lastKnownRot = rot;
-        lastKnownFrameVelocity = frameVelocity;
+        lastKnownFrameVelocity = _frameVelocity;
         lastKnownInterpMode = interpolationMode;
+
         lastKnownTimestamp = estTime;
+    }
+    protected override void initialReplicationComplete() {
+        base.initialReplicationComplete();
+        Debug.Log("initial rep complete" + role);
+        if (role != GameObjectRoles.Autonomous) {
+            cc.enabled = false;
+            Debug.Log("disabling cc on non autonomous characters.");
+        }
     }
     public void onPossess() {
         lastMousePos = Input.mousePosition;
     }
 
     public Vector3 frameVelocity;
+    Vector3 lerpedVelocity;
     public void update(float deltaTime) {
+        Vector3 cachedPos = transform.position;
         if (role == GameObjectRoles.Autonomous) {
-            Vector3 preUpdatePos = transform.position;
+            Vector3 preUpdatePos = cachedPos;
             updateMovement(deltaTime);
             updateLook(deltaTime);
-            frameVelocity = transform.position - preUpdatePos;
-            frameVelocity /= deltaTime;
-
+            frameVelocity = cachedPos - preUpdatePos;
+            //frameVelocity /= deltaTime;
+            frameVelocity.Normalize();
+            frameVelocity *= speed;
             float sinceFirstRep = Time.realtimeSinceStartup + timeDiff;
+            //if (frameVelocity.magnitude > 0.01f) {
+            //    Debug.Log("frame velocity " + frameVelocity.magnitude);
+            //}
             ReceiveUpdate_OnServer(transform.position, transform.eulerAngles, sinceFirstRep, frameVelocity, cc.isGrounded ? (byte)1 : (byte)0);
         }
         else if (role == GameObjectRoles.Authority) {
@@ -73,14 +88,15 @@ public partial class CharacterMovement : ReplicatedProperties {
             Vector3 predictedPos = Vector3.zero;
             if (lastKnownInterpMode == 1) { // linear interpolation
                 predictedPos = timePassedSinceLastKnown * lastKnownFrameVelocity + lastKnownPos;
-                //Debug.Log("time passed:" + timePassedSinceLastKnown);
+                cachedPos = (cachedPos + predictedPos) / 2f;
+                //Debug.Log("time passed:" + timePassedSinceLastKnown + " last vel: " + lastKnownFrameVelocity + " last pos: " + lastKnownPos);
 
             }
             else {
                 // lerp to.
-                predictedPos = lastKnownPos;
+                cachedPos = lastKnownPos;
             }
-            transform.position = predictedPos;
+            transform.position = cachedPos;
             transform.eulerAngles = lastKnownRot;
         }
     }

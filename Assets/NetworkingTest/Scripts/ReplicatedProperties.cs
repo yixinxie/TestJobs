@@ -80,6 +80,15 @@ public class ReplicatedProperties : MonoBehaviour {
                 break;
             case 1:
                 initialReplicationComplete();
+                // now that the function is called on the client, call this function on the server.
+                ClientTest.self.rpcBegin(goId, 2);
+                ClientTest.self.rpcEnd();
+
+                ret = true;
+                break;
+            case 2: // ack 1
+                // call this function on the server.
+                initialReplicationComplete();
                 ret = true;
                 break;
 

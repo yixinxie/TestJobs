@@ -253,7 +253,7 @@ public class ClientTest : MonoBehaviour
                     break;
                 case NetworkEventType.ConnectEvent:    //2
                     serverConId = recHostId;
-                    Debug.Log(recData.ToString());
+                    Debug.Log("ConnectEvent datasize " + dataSize + " error " + error);
                     break;
                 case NetworkEventType.DataEvent:       //3
                     decodeRawData(recvBuffer, synchronizedComponents);
