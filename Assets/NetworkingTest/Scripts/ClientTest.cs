@@ -244,9 +244,9 @@ public class ClientTest : MonoBehaviour
         bool loop = true;
         for (int i = 0; i < 10 && loop; ++i) {
             NetworkEventType recData = NetworkTransport.Receive(out recHostId, out connectionId, out channelId, recvBuffer, bufferSize, out dataSize, out error);
-            if(channelId == unreliableCHN) {
-                Debug.Log("unreliable: " + dataSize);
-            }
+            //if(channelId == unreliableCHN) {
+            //    Debug.Log("unreliable: " + dataSize);
+            //}
             switch (recData) {
                 case NetworkEventType.Nothing:         //1
                     loop = false;

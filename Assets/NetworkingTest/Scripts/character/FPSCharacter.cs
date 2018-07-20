@@ -52,7 +52,7 @@ public partial class FPSCharacter : ReplicatedProperties {
     public FPSCharacter drone;
     // Update is called once per frame
     void Update () {
-        float deltaTime = Time.fixedDeltaTime;
+        float deltaTime = Time.deltaTime;
         // update rotation
         charMovement.update(deltaTime);
         updateMouseClick();

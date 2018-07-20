@@ -18,6 +18,24 @@ public struct GameObjectSpawnInfo {
     public GameObject obj;
     public string path;
 }
+public class PlayerOwnedInfo {
+    public int connectionId;
+    public SerializedBuffer[] sendBuffers;
+    public List<GameObjectSpawnInfo> gameObjectsOwned;
+    public PlayerOwnedInfo(int _connId) {
+        connectionId = _connId;
+        if (connectionId >= 0) {
+            sendBuffers = new SerializedBuffer[2];
+            sendBuffers[0] = new SerializedBuffer();
+            sendBuffers[1] = new SerializedBuffer();
+        }
+        else {
+            sendBuffers = null;
+        }
+        gameObjectsOwned = new List<GameObjectSpawnInfo>();
+    }
+
+}
 public class ServerTest : MonoBehaviour {
     // Use this for initialization
     public static ServerTest self;
@@ -30,12 +48,15 @@ public class ServerTest : MonoBehaviour {
 
     byte[] recvBuffer;
 
-    List<int> playerStates;
-    List<SerializedBuffer> sendBuffers;
-    List<List<GameObjectSpawnInfo>> gameObjectsByOwner; // player controller(connection) id, owned NetGOs.
+    //List<int> playerStates;
+    //List<SerializedBuffer> sendBuffers;
+    //List<List<GameObjectSpawnInfo>> gameObjectsByOwner; // player controller(connection) id, owned NetGOs.
+    List<PlayerOwnedInfo> playerOwned;
     Dictionary<int, ReplicatedProperties> synchronizedComponents; // instance id, game object
     List<int> newConnectionList;
     int bufferSize = 1024;
+    byte rpcSessionMode;
+    List<int> sessionRPCTargetIndices = new List<int>(8);
     void Awake () {
         self = this;
         Application.runInBackground = true;
@@ -55,20 +76,40 @@ public class ServerTest : MonoBehaviour {
         recvBuffer = new byte[bufferSize];
 
         int defaultMaxPlayerCount = 8;
-        playerStates = new List<int>(defaultMaxPlayerCount);
-        sendBuffers = new List<SerializedBuffer>(defaultMaxPlayerCount * 2);
+        playerOwned = new List<PlayerOwnedInfo>(defaultMaxPlayerCount);
+        //playerStates = new List<int>(defaultMaxPlayerCount);
+        //sendBuffers = new List<SerializedBuffer>(defaultMaxPlayerCount * 2);
+        //gameObjectsByOwner = new List<List<GameObjectSpawnInfo>>();
         synchronizedComponents = new Dictionary<int, ReplicatedProperties>();
-        gameObjectsByOwner = new List<List<GameObjectSpawnInfo>>();
+        
         newConnectionList = new List<int>();
     }
-
+    const int ServerPSId = -1;
     private void Start() {
+        //createServerGameObject(PlayerStatePrefabPath);
+    }
+    public void createServerGameObject(string path) {
+        int[] goid;
+        GameObject pcgo = spawnPrefabOnServer(ServerPSId, path, out goid);
+
+        ReplicatedProperties[] repComponents = pcgo.GetComponents<ReplicatedProperties>();
+        for (int i = 0; i < repComponents.Length; ++i) {
+            repComponents[i].role = GameObjectRoles.Host;
+        }
+        playerOwned.Add(new PlayerOwnedInfo(ServerPSId));
+        int idx = getIndexByConnectionId(ServerPSId);
+        if (idx >= 0) {
+            GameObjectSpawnInfo gosi = new GameObjectSpawnInfo();
+            gosi.path = path;
+            gosi.obj = pcgo;
+            playerOwned[idx].gameObjectsOwned.Add(gosi);
+        }
     }
 
     public void replicateExistingGameObjectsToNewClient(int connId) {
         
-        for (int i = 0; i < gameObjectsByOwner.Count; ++i) {
-            List<GameObjectSpawnInfo> objList = gameObjectsByOwner[i];
+        for (int i = 0; i < playerOwned.Count; ++i) {
+            List<GameObjectSpawnInfo> objList = playerOwned[i].gameObjectsOwned;
             for(int j = 0; j < objList.Count; ++j) {
                 ReplicatedProperties[] repComponents = objList[j].obj.GetComponents<ReplicatedProperties>();
                 int[] comp_ids = new int[repComponents.Length];
@@ -103,7 +144,7 @@ public class ServerTest : MonoBehaviour {
             GameObjectSpawnInfo gosi = new GameObjectSpawnInfo();
             gosi.path = path;
             gosi.obj = pcgo;
-            gameObjectsByOwner[idx].Add(gosi);
+            playerOwned[idx].gameObjectsOwned.Add(gosi);
         }
         
         return pcgo;
@@ -125,8 +166,8 @@ public class ServerTest : MonoBehaviour {
         return newNetGO;
     }
     int getIndexByConnectionId(int conn_id) {
-        for (int i = 0; i < playerStates.Count; ++i) {
-            if (playerStates[i] == conn_id)
+        for (int i = 0; i < playerOwned.Count; ++i) {
+            if (playerOwned[i].connectionId == conn_id)
                 return i;
         }
         return -1;
@@ -135,28 +176,30 @@ public class ServerTest : MonoBehaviour {
     void serializeGameObjectReplication(int[] component_ids, string path, int conn_id = -1)
     {
         if (conn_id == -1) {
-            for (int i = 0; i < playerStates.Count; ++i) {
-                sendBuffers[i * 2].serializeUShort((ushort)NetOpCodes.SpawnPrefab);
-                sendBuffers[i * 2].serializeByte((byte)component_ids.Length);
+            for (int i = 0; i < playerOwned.Count; ++i) {
+                if (playerOwned[i].connectionId == ServerPSId) continue;
+
+                playerOwned[i].sendBuffers[0].serializeUShort((ushort)NetOpCodes.SpawnPrefab);
+                playerOwned[i].sendBuffers[0].serializeByte((byte)component_ids.Length);
                 // instance id count
                 for (int j = 0; j < component_ids.Length; ++j) {
-                    sendBuffers[i * 2].serializeInt(component_ids[j]);
+                    playerOwned[i].sendBuffers[0].serializeInt(component_ids[j]);
                 }
-                sendBuffers[i * 2].serializeString(path);
-                sendBuffers[i * 2].incrementCommandCount();
+                playerOwned[i].sendBuffers[0].serializeString(path);
+                playerOwned[i].sendBuffers[0].incrementCommandCount();
             }
         }
         else {
             int idx = getIndexByConnectionId(conn_id);
             if (idx >= 0) {
-                sendBuffers[idx * 2].serializeUShort((ushort)NetOpCodes.SpawnPrefab);
-                sendBuffers[idx * 2].serializeByte((byte)component_ids.Length);
+                playerOwned[idx].sendBuffers[0].serializeUShort((ushort)NetOpCodes.SpawnPrefab);
+                playerOwned[idx].sendBuffers[0].serializeByte((byte)component_ids.Length);
                 // instance id count
                 for (int j = 0; j < component_ids.Length; ++j) {
-                    sendBuffers[idx * 2].serializeInt(component_ids[j]);
+                    playerOwned[idx].sendBuffers[0].serializeInt(component_ids[j]);
                 }
-                sendBuffers[idx * 2].serializeString(path);
-                sendBuffers[idx * 2].incrementCommandCount();
+                playerOwned[idx].sendBuffers[0].serializeString(path);
+                playerOwned[idx].sendBuffers[0].incrementCommandCount();
             }
         }
 
@@ -196,19 +239,20 @@ public class ServerTest : MonoBehaviour {
                     ClientTest.decodeRawData(recvBuffer, synchronizedComponents);
                     break;
                 case NetworkEventType.DisconnectEvent: //4
-                    if (playerStates.Contains(recConnectionId)) {
+                    int idx = getIndexByConnectionId(recConnectionId);
+                    if (idx >= 0) {
                         Debug.Log("player " + recConnectionId + " disconnected.");
-                        for(int j = 0; j < playerStates.Count; ++j) {
-                            if(playerStates[j] == recConnectionId) {
-                                playerStates.RemoveAt(j);
-                                sendBuffers.RemoveAt(j * 2 + 1);
-                                sendBuffers.RemoveAt(j * 2);
+                        for(int j = 0; j < playerOwned.Count; ++j) {
+                            if(playerOwned[j].connectionId == recConnectionId) {
+                                //playerStates.RemoveAt(j);
+                                //sendBuffers.RemoveAt(j * 2 + 1);
+                                //sendBuffers.RemoveAt(j * 2);
                                 
-                                List<GameObjectSpawnInfo> toRemove = gameObjectsByOwner[j];
+                                List<GameObjectSpawnInfo> toRemove = playerOwned[j].gameObjectsOwned;
                                 for(int k = 0; k < toRemove.Count; ++k) {
                                     GameObject.Destroy(toRemove[k].obj);
                                 }
-                                gameObjectsByOwner.RemoveAt(j);
+                                playerOwned.RemoveAt(j);
                                 break;
                             }
                         }
@@ -219,10 +263,7 @@ public class ServerTest : MonoBehaviour {
         }
         for(int i = 0; i < newConnectionList.Count; ++i) {
             // create player state
-            playerStates.Add(newConnectionList[i]);
-            sendBuffers.Add(new SerializedBuffer());
-            sendBuffers.Add(new SerializedBuffer());
-            gameObjectsByOwner.Add(new List<GameObjectSpawnInfo>());
+            playerOwned.Add(new PlayerOwnedInfo(newConnectionList[i]));
             replicateExistingGameObjectsToNewClient(newConnectionList[i]);
             spawnReplicatedGameObject(newConnectionList[i], PlayerStatePrefabPath);
         }
@@ -232,12 +273,14 @@ public class ServerTest : MonoBehaviour {
         if (conn_id >= 0) {
             int idx = getIndexByConnectionId(conn_id);
             if (idx >= 0) {
-                sendBuffers[idx * 2].repVar(component_id, var_id, val);
+
+                playerOwned[idx].sendBuffers[0].repVar(component_id, var_id, val);
             }
         }
         else {
-            for (int i = 0; i < playerStates.Count; ++i) {
-                sendBuffers[i * 2].repVar(component_id, var_id, val);
+            for (int i = 0; i < playerOwned.Count; ++i) {
+                if (playerOwned[i].connectionId == ServerPSId) continue;
+                playerOwned[i].sendBuffers[0].repVar(component_id, var_id, val);
             }
         }
     }
@@ -246,21 +289,20 @@ public class ServerTest : MonoBehaviour {
         if (conn_id >= 0) {
             int idx = getIndexByConnectionId(conn_id);
             if(idx >= 0) {
-                sendBuffers[idx * 2].repVar(component_id, var_id, val);
+                playerOwned[idx].sendBuffers[0].repVar(component_id, var_id, val);
             }
         }
         else {
-            for (int i = 0; i < playerStates.Count; ++i) {
-                sendBuffers[i * 2].repVar(component_id, var_id, val);
+            for (int i = 0; i < playerOwned.Count; ++i) {
+                playerOwned[i].sendBuffers[0].repVar(component_id, var_id, val);
             }
         }
     }
-    byte rpcSessionMode;
-    List<int> sessionRPCTargetIndices = new List<int>(8);
+    
     public void rpcBegin(int component_id, ushort rpc_id, byte mode, int owner_id) {
         rpcSessionMode = mode;
         sessionRPCTargetIndices.Clear();
-        int usingUnreliable = mode & SerializedBuffer.RPCMode_Unreliable;
+        int usingUnreliable = ((mode & SerializedBuffer.RPCMode_Unreliable) > 0) ? 1 : 0;
         if ((rpcSessionMode & SerializedBuffer.RPCMode_ToTarget) > 0) {
             int idx = getIndexByConnectionId(owner_id);
             if (idx >= 0) {
@@ -268,41 +310,53 @@ public class ServerTest : MonoBehaviour {
             }
         }
         if ((rpcSessionMode & SerializedBuffer.RPCMode_ExceptTarget) > 0) {
-            for (int i = 0; i < playerStates.Count; ++i) {
-                if (playerStates[i] != owner_id) {
+            for (int i = 0; i < playerOwned.Count; ++i) {
+                if (playerOwned[i].connectionId != owner_id && playerOwned[i].connectionId != ServerPSId) {
                     sessionRPCTargetIndices.Add(i * 2 + usingUnreliable);
                 }
             }
         }
 
         for (int i = 0; i < sessionRPCTargetIndices.Count; ++i) {
-            sendBuffers[sessionRPCTargetIndices[i]].rpcBegin(component_id, rpc_id);
+            int idx0 = sessionRPCTargetIndices[i] >> 1;
+            int idx1 = sessionRPCTargetIndices[i] % 2;
+            playerOwned[idx0].sendBuffers[idx1].rpcBegin(component_id, rpc_id);
         }
     }
     public void rpcEnd() {
         for (int i = 0; i < sessionRPCTargetIndices.Count; ++i) {
-            sendBuffers[sessionRPCTargetIndices[i]].rpcEnd();
+            int idx0 = sessionRPCTargetIndices[i] >> 1;
+            int idx1 = sessionRPCTargetIndices[i] % 2;
+            playerOwned[idx0].sendBuffers[idx1].rpcEnd();
         }
     }
     public void rpcAddParam(byte val) {
 
         for (int i = 0; i < sessionRPCTargetIndices.Count; ++i) {
-            sendBuffers[sessionRPCTargetIndices[i]].rpcAddParam(val);
+            int idx0 = sessionRPCTargetIndices[i] >> 1;
+            int idx1 = sessionRPCTargetIndices[i] % 2;
+            playerOwned[idx0].sendBuffers[idx1].rpcAddParam(val);
         }
     }
     public void rpcAddParam(int val) {
         for (int i = 0; i < sessionRPCTargetIndices.Count; ++i) {
-            sendBuffers[sessionRPCTargetIndices[i]].rpcAddParam(val);
+            int idx0 = sessionRPCTargetIndices[i] >> 1;
+            int idx1 = sessionRPCTargetIndices[i] % 2;
+            playerOwned[idx0].sendBuffers[idx1].rpcAddParam(val);
         }
     }
     public void rpcAddParam(float val) {
         for (int i = 0; i < sessionRPCTargetIndices.Count; ++i) {
-            sendBuffers[sessionRPCTargetIndices[i]].rpcAddParam(val);
+            int idx0 = sessionRPCTargetIndices[i] >> 1;
+            int idx1 = sessionRPCTargetIndices[i] % 2;
+            playerOwned[idx0].sendBuffers[idx1].rpcAddParam(val);
         }
     }
     public void rpcAddParam(Vector3 val) {
         for (int i = 0; i < sessionRPCTargetIndices.Count; ++i) {
-            sendBuffers[sessionRPCTargetIndices[i]].rpcAddParam(val);
+            int idx0 = sessionRPCTargetIndices[i] >> 1;
+            int idx1 = sessionRPCTargetIndices[i] % 2;
+            playerOwned[idx0].sendBuffers[idx1].rpcAddParam(val);
         }
     }
 
@@ -310,17 +364,19 @@ public class ServerTest : MonoBehaviour {
     {
         byte error = 0;
         // to each
-        for (int i = 0; i < playerStates.Count; ++i)
+        for (int i = 0; i < playerOwned.Count; ++i)
         {
-            if (sendBuffers[i * 2].getCommandCount() > 0) {
-                sendBuffers[i * 2].seal();
-                NetworkTransport.Send(socketId, playerStates[i], reliableCHN, sendBuffers[i * 2].getBuffer(), sendBuffers[i * 2].getOffset(), out error);
-                sendBuffers[i * 2].reset();
+            PlayerOwnedInfo poi = playerOwned[i];
+            if (poi.connectionId == ServerPSId) continue;
+            if (poi.sendBuffers[i * 2].getCommandCount() > 0) {
+                poi.sendBuffers[i * 2].seal();
+                NetworkTransport.Send(socketId, poi.connectionId, reliableCHN, poi.sendBuffers[i * 2].getBuffer(), poi.sendBuffers[i * 2].getOffset(), out error);
+                poi.sendBuffers[i * 2].reset();
             }
-            if (sendBuffers[i * 2 + 1].getCommandCount() > 0) {
-                sendBuffers[i * 2 + 1].seal();
-                NetworkTransport.Send(socketId, playerStates[i], unreliableCHN, sendBuffers[i * 2 + 1].getBuffer(), sendBuffers[i * 2 + 1].getOffset(), out error);
-                sendBuffers[i * 2 + 1].reset();
+            if (poi.sendBuffers[i * 2 + 1].getCommandCount() > 0) {
+                poi.sendBuffers[i * 2 + 1].seal();
+                NetworkTransport.Send(socketId, poi.connectionId, unreliableCHN, poi.sendBuffers[i * 2 + 1].getBuffer(), poi.sendBuffers[i * 2 + 1].getOffset(), out error);
+                poi.sendBuffers[i * 2 + 1].reset();
             }
         }
     }

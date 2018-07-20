@@ -4,11 +4,27 @@ public enum GameObjectRoles : byte {
     SimulatedProxy, // remote client
     Autonomous, // controlling client
     Authority, // server
+    Host, // host
     Undefined = 255,
 }
+/*
+ * server-client architecture
+ * authority
+ * autonomous,  simulated proxy
+ * 
+ * 
+ * host-guest architecture
+ * host object
+ * on host: authority
+ * on guest: simulated proxy
+ * 
+ * guest object
+ * on host: authority
+ * on guest: autonomous, simulated proxy
+ */
 public class ReplicatedProperties : MonoBehaviour {
 
-    public int owner = -1;
+    public int owner = -65535;
     protected int goId; // id on server.
     public bool alwaysRelevant = true; // not used!
     public GameObjectRoles role = GameObjectRoles.Undefined;

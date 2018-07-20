@@ -223,16 +223,21 @@ public partial class %name%{
         return fullClassText.ToString();
     }
 
-    static string repIntTmpl = @"
+    static string repGenericTmpl = @"
     public void rep_%var%() {
         ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget);
     }
 ";
-    static string repFloatTmpl = @"
-    public void rep_%var%() {
-        ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget);
-    }
-";
+//    static string repFloatTmpl = @"
+//    public void rep_%var%() {
+//        ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget);
+//    }
+//";
+//    static string repByteTmpl = @"
+//    public void rep_%var%() {
+//        ServerTest.self.repVar(goId, %offset%, %var%, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget);
+//    }
+//";
 
     static string IntSwitchCaseTmpl = @"
             case %var_offset%:
@@ -246,6 +251,14 @@ public partial class %name%{
             case %var_offset%:
             %hasonrep%float old_%var% = %var%;
             %var% = ClientTest.deserializeToFloat(src, ref offset);
+            %hasonrep%%onrep%(old_%var%);
+            
+            break;
+";
+    static string ByteSwitchCaseTmpl = @"
+            case %var_offset%:
+            %hasonrep%byte old_%var% = %var%;
+            %var% = ClientTest.deserializeToByte(src, ref offset);
             %hasonrep%%onrep%(old_%var%);
             
             break;
@@ -269,13 +282,17 @@ public partial class %name%{
             string insSwitch = null;
             if (fieldInfo.FieldType.Equals(typeof(int)))
             {
-                ins = repIntTmpl;
+                ins = repGenericTmpl;
                 insSwitch = IntSwitchCaseTmpl;
             }
             else if (fieldInfo.FieldType.Equals(typeof(float)))
             {
-                ins = repFloatTmpl;
+                ins = repGenericTmpl;
                 insSwitch = FloatSwitchCaseTmpl;
+            }
+            else if (fieldInfo.FieldType.Equals(typeof(byte))) {
+                ins = repGenericTmpl;
+                insSwitch = ByteSwitchCaseTmpl;
             }
             if (ins == null) continue;
             ins = ins.Replace("%var%", fieldInfo.Name);

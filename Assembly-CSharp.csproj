@@ -67,6 +67,7 @@
     <Compile Include="Assets\JobTest\TestArray.cs" />
     <Compile Include="Assets\JobTest\TubeData.cs" />
     <Compile Include="Assets\JobTest\TubeSimulate.cs" />
+    <Compile Include="Assets\NetworkingTest\Scripts\BezierStatic.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\character\CameraUtils.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\character\CharacterMovement.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\character\FPSCharacter.cs" />

@@ -21,7 +21,7 @@ public partial class PlayerState : ReplicatedProperties {
     private void Start() {
         if(ServerTest.self != null) {
             GameObject psGO = ServerTest.self.spawnReplicatedGameObject(owner, characterPrefabPath);
-            serverTime = Time.realtimeSinceStartup;
+            serverTime = CharacterMovement.getTime();
             rep_serverTime();
         }
     }
