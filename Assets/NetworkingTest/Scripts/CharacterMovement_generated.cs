@@ -8,15 +8,11 @@ public partial class CharacterMovement{
         ServerTest.self.repVar(goId, 64, serverTime, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget);
     }
 
-    public void rep_isHost() {
-        ServerTest.self.repVar(goId, 65, isHost, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget);
-    }
-
     
     /** replicate all states upon gameobject replication*/
     public override void replicateAllStates(byte repMode, int conn_id = -1) {
         base.replicateAllStates(repMode, conn_id);
-        rep_serverTime();rep_isHost();
+        rep_serverTime();
     }
 
     /** variable reception method(client)*/
@@ -29,13 +25,6 @@ public partial class CharacterMovement{
             float old_serverTime = serverTime;
             serverTime = ClientTest.deserializeToFloat(src, ref offset);
             onrepServerTime(old_serverTime);
-            
-            break;
-
-            case 65:
-            //byte old_isHost = isHost;
-            isHost = ClientTest.deserializeToByte(src, ref offset);
-            //(old_isHost);
             
             break;
 
@@ -58,8 +47,20 @@ public partial class CharacterMovement{
     }
 
 
+    public void ReceiveUpdateFromHost_OnClient(UnityEngine.Vector3 pos,UnityEngine.Vector3 rot,System.Single estTime,UnityEngine.Vector3 _frameVelocity,System.Byte interpolationMode){
+		ServerTest.self.rpcBegin(goId, 65, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget | SerializedBuffer.RPCMode_Unreliable, owner);
+		ServerTest.self.rpcAddParam(pos);
+		ServerTest.self.rpcAddParam(rot);
+		ServerTest.self.rpcAddParam(estTime);
+		ServerTest.self.rpcAddParam(_frameVelocity);
+		ServerTest.self.rpcAddParam(interpolationMode);
+		ServerTest.self.rpcEnd();
+
+    }
+
+
     public void PingServer_OnServer(System.Int32 id){
-		ClientTest.self.rpcBegin(goId, 65, SerializedBuffer.RPCMode_Unreliable);
+		ClientTest.self.rpcBegin(goId, 66, SerializedBuffer.RPCMode_Unreliable);
 		ClientTest.self.rpcAddParam(id);
 		ClientTest.self.rpcEnd();
 
@@ -67,7 +68,7 @@ public partial class CharacterMovement{
 
 
     public void PingClient_OnClient(System.Int32 id){
-		ServerTest.self.rpcBegin(goId, 66, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget | SerializedBuffer.RPCMode_Unreliable, owner);
+		ServerTest.self.rpcBegin(goId, 67, SerializedBuffer.RPCMode_ToTarget | SerializedBuffer.RPCMode_ExceptTarget | SerializedBuffer.RPCMode_Unreliable, owner);
 		ServerTest.self.rpcAddParam(id);
 		ServerTest.self.rpcEnd();
 
@@ -90,12 +91,19 @@ public partial class CharacterMovement{
 
             case 65:
             {
-                System.Int32 id = ClientTest.deserializeToInt(src, ref offset);PingServer(id);
+                UnityEngine.Vector3 pos = ClientTest.deserializeToVector3(src, ref offset);UnityEngine.Vector3 rot = ClientTest.deserializeToVector3(src, ref offset);System.Single estTime = ClientTest.deserializeToFloat(src, ref offset);UnityEngine.Vector3 _frameVelocity = ClientTest.deserializeToVector3(src, ref offset);System.Byte interpolationMode = ClientTest.deserializeToByte(src, ref offset);ReceiveUpdateFromHost(pos, rot, estTime, _frameVelocity, interpolationMode);
             }
             break;
 
 
             case 66:
+            {
+                System.Int32 id = ClientTest.deserializeToInt(src, ref offset);PingServer(id);
+            }
+            break;
+
+
+            case 67:
             {
                 System.Int32 id = ClientTest.deserializeToInt(src, ref offset);PingClient(id);
             }

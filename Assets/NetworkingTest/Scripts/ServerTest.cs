@@ -86,15 +86,19 @@ public class ServerTest : MonoBehaviour {
     }
     const int ServerPSId = -1;
     private void Start() {
-        //createServerGameObject(PlayerStatePrefabPath);
+        GameObject go = createServerGameObject(PlayerStatePrefabPath);
+        PlayerState ps = go.GetComponent<PlayerState>();
+        ps.isHost = true;
     }
-    public void createServerGameObject(string path) {
+    public GameObject createServerGameObject(string path) {
         int[] goid;
         GameObject pcgo = spawnPrefabOnServer(ServerPSId, path, out goid);
 
         ReplicatedProperties[] repComponents = pcgo.GetComponents<ReplicatedProperties>();
         for (int i = 0; i < repComponents.Length; ++i) {
-            repComponents[i].role = GameObjectRoles.Host;
+            repComponents[i].isHost = 1;
+            repComponents[i].role = GameObjectRoles.Authority;
+            repComponents[i].initialReplicationComplete();
         }
         playerOwned.Add(new PlayerOwnedInfo(ServerPSId));
         int idx = getIndexByConnectionId(ServerPSId);
@@ -104,6 +108,7 @@ public class ServerTest : MonoBehaviour {
             gosi.obj = pcgo;
             playerOwned[idx].gameObjectsOwned.Add(gosi);
         }
+        return pcgo;
     }
 
     public void replicateExistingGameObjectsToNewClient(int connId) {
@@ -270,47 +275,84 @@ public class ServerTest : MonoBehaviour {
         sendAllBuffers();
     }
     public void repVar(int component_id, ushort var_id, int val, byte rep_mode, int conn_id = -1) {
-        if (conn_id >= 0) {
-            int idx = getIndexByConnectionId(conn_id);
-            if (idx >= 0) {
+        if ((rep_mode & SerializedBuffer.RPCMode_ToTarget) > 0 &&
+            (rep_mode & SerializedBuffer.RPCMode_ExceptTarget) > 0) {
 
-                playerOwned[idx].sendBuffers[0].repVar(component_id, var_id, val);
-            }
-        }
-        else {
             for (int i = 0; i < playerOwned.Count; ++i) {
                 if (playerOwned[i].connectionId == ServerPSId) continue;
                 playerOwned[i].sendBuffers[0].repVar(component_id, var_id, val);
             }
         }
-    }
-
-    public void repVar(int component_id, ushort var_id, float val, byte rep_mode, int conn_id = -1) {
-        if (conn_id >= 0) {
+        else {
             int idx = getIndexByConnectionId(conn_id);
-            if(idx >= 0) {
-                playerOwned[idx].sendBuffers[0].repVar(component_id, var_id, val);
+            if (idx >= 0) {
+                if ((rep_mode & SerializedBuffer.RPCMode_ToTarget) > 0) {
+                    playerOwned[idx].sendBuffers[0].repVar(component_id, var_id, val);
+                }
+                else {
+                    if ((rep_mode & SerializedBuffer.RPCMode_ExceptTarget) > 0) {
+                        for (int i = 0; i < playerOwned.Count; ++i) {
+                            if (playerOwned[i].connectionId == ServerPSId || playerOwned[i].connectionId == conn_id) continue;
+
+                            playerOwned[i].sendBuffers[0].repVar(component_id, var_id, val);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    public void repVar(int component_id, ushort var_id, float val, byte rep_mode, int conn_id = -1) {
+        if ((rep_mode & SerializedBuffer.RPCMode_ToTarget) > 0 &&
+            (rep_mode & SerializedBuffer.RPCMode_ExceptTarget) > 0) {
+
+            for (int i = 0; i < playerOwned.Count; ++i) {
+                if (playerOwned[i].connectionId == ServerPSId) continue;
+                playerOwned[i].sendBuffers[0].repVar(component_id, var_id, val);
             }
         }
         else {
-            for (int i = 0; i < playerOwned.Count; ++i) {
-                playerOwned[i].sendBuffers[0].repVar(component_id, var_id, val);
+            int idx = getIndexByConnectionId(conn_id);
+            if (idx >= 0) {
+                if ((rep_mode & SerializedBuffer.RPCMode_ToTarget) > 0) {
+                    playerOwned[idx].sendBuffers[0].repVar(component_id, var_id, val);
+                }
+                else {
+                    if ((rep_mode & SerializedBuffer.RPCMode_ExceptTarget) > 0) {
+                        for (int i = 0; i < playerOwned.Count; ++i) {
+                            if (playerOwned[i].connectionId == ServerPSId || playerOwned[i].connectionId == conn_id) continue;
+
+                            playerOwned[i].sendBuffers[0].repVar(component_id, var_id, val);
+                        }
+                    }
+                }
             }
         }
     }
 
     public void repVar(int component_id, ushort var_id, byte val, byte rep_mode, int conn_id = -1) {
-        if (conn_id >= 0) {
-            int idx = getIndexByConnectionId(conn_id);
-            if (idx >= 0) {
+        if ((rep_mode & SerializedBuffer.RPCMode_ToTarget) > 0 &&
+            (rep_mode & SerializedBuffer.RPCMode_ExceptTarget) > 0) {
 
-                playerOwned[idx].sendBuffers[0].repVar(component_id, var_id, val);
-            }
-        }
-        else {
             for (int i = 0; i < playerOwned.Count; ++i) {
                 if (playerOwned[i].connectionId == ServerPSId) continue;
                 playerOwned[i].sendBuffers[0].repVar(component_id, var_id, val);
+            }
+        }
+        else {
+            int idx = getIndexByConnectionId(conn_id);
+            if (idx >= 0) {
+                if ((rep_mode & SerializedBuffer.RPCMode_ToTarget) > 0) {
+                    playerOwned[idx].sendBuffers[0].repVar(component_id, var_id, val);
+                }
+                else {
+                    if ((rep_mode & SerializedBuffer.RPCMode_ExceptTarget) > 0) {
+                        for (int i = 0; i < playerOwned.Count; ++i) {
+                            if (playerOwned[i].connectionId == ServerPSId || playerOwned[i].connectionId == conn_id) continue;
+
+                            playerOwned[i].sendBuffers[0].repVar(component_id, var_id, val);
+                        }
+                    }
+                }
             }
         }
     }
@@ -321,7 +363,7 @@ public class ServerTest : MonoBehaviour {
         int usingUnreliable = ((mode & SerializedBuffer.RPCMode_Unreliable) > 0) ? 1 : 0;
         if ((rpcSessionMode & SerializedBuffer.RPCMode_ToTarget) > 0) {
             int idx = getIndexByConnectionId(owner_id);
-            if (idx >= 0) {
+            if (idx >= 0 && playerOwned[idx].connectionId != ServerPSId) {
                 sessionRPCTargetIndices.Add(idx * 2 + usingUnreliable);
             }
         }

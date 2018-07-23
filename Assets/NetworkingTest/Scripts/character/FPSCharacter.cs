@@ -20,13 +20,13 @@ public partial class FPSCharacter : ReplicatedProperties {
         vehicleLayerMask = LayerMask.GetMask(new string[] { "vehicle"});
     }
     // Use this for initialization
-    protected override void initialReplicationComplete() {
+    public override void initialReplicationComplete() {
         base.initialReplicationComplete();
         //if(currentWeapon != null)
         //    currentWeapon.setAudioSource(GetComponent<AudioSource>());
 
         //buildControl = Camera.main.GetComponent<BuildControl>();
-        if(role == GameObjectRoles.Autonomous)
+        if(role == GameObjectRoles.Autonomous || isHost == 1)
             possess();
     }
     private void Start() {
@@ -53,11 +53,8 @@ public partial class FPSCharacter : ReplicatedProperties {
     // Update is called once per frame
     void Update () {
         float deltaTime = Time.deltaTime;
-        // update rotation
         charMovement.update(deltaTime);
         updateMouseClick();
-
-
         // build mode
         //if (Input.GetKeyDown(KeyCode.Escape)) {
         //    if(buildControl != null) {

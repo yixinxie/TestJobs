@@ -8,6 +8,7 @@ public partial class PlayerState : ReplicatedProperties {
     public string characterPrefabPath;
     [Replicated]
     public float serverTime;
+    public bool isHost;
     // onrep callbacks
     /** call this in Awake() */
     protected override void Awake() {
@@ -20,9 +21,15 @@ public partial class PlayerState : ReplicatedProperties {
 
     private void Start() {
         if(ServerTest.self != null) {
-            GameObject psGO = ServerTest.self.spawnReplicatedGameObject(owner, characterPrefabPath);
-            serverTime = CharacterMovement.getTime();
-            rep_serverTime();
+            if (isHost) {
+                ServerTest.self.createServerGameObject(characterPrefabPath);
+            }
+            else {
+                
+                GameObject psGO = ServerTest.self.spawnReplicatedGameObject(owner, characterPrefabPath);
+                serverTime = CharacterMovement.getTime();
+                rep_serverTime();
+            }
         }
     }
 }

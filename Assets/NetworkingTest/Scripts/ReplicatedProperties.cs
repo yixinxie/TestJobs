@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
+
+// similar to ue4's definition
 public enum GameObjectRoles : byte {
     None, // disconnected
     SimulatedProxy, // remote client
     Autonomous, // controlling client
     Authority, // server
-    Host, // host
     Undefined = 255,
 }
 /*
@@ -15,8 +16,8 @@ public enum GameObjectRoles : byte {
  * 
  * host-guest architecture
  * host object
- * on host: authority
- * on guest: simulated proxy
+ * on host: authority, ownedByServer = 1
+ * on guest: simulated proxy, ownedByServer = 0
  * 
  * guest object
  * on host: authority
@@ -29,6 +30,7 @@ public class ReplicatedProperties : MonoBehaviour {
     public bool alwaysRelevant = true; // not used!
     public GameObjectRoles role = GameObjectRoles.Undefined;
     public int server_id { get { return goId; } }
+    public byte isHost;
     protected virtual void Awake()
     {
         goId = GetInstanceID(); // should only run on server.
@@ -81,7 +83,7 @@ public class ReplicatedProperties : MonoBehaviour {
         }
     }
 
-    protected virtual void initialReplicationComplete() {
+    public virtual void initialReplicationComplete() {
 
     }
 

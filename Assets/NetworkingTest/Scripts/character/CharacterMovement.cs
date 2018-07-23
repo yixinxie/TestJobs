@@ -11,8 +11,8 @@ public partial class CharacterMovement : ReplicatedProperties {
     public float gravity = 9.8f;
     [Replicated]
     public float serverTime;
-    [Replicated]
-    public byte isHost;
+    //[Replicated]
+    //public byte isHost;
     public Transform TPCameraTrans;
     Vector3 lastMousePos;
     float skinWidth;
@@ -36,7 +36,7 @@ public partial class CharacterMovement : ReplicatedProperties {
     public float lastRTT;
     float avgRTT;
     public int remaining;
-    
+
     protected override void Awake() {
         base.Awake();
 
@@ -62,7 +62,7 @@ public partial class CharacterMovement : ReplicatedProperties {
     public static float getTime() {
         return Time.realtimeSinceStartup;
     }
-    
+
     [OnRep(forVar = "serverTime")]
     void onrepServerTime(float oldVal) {
         localTime = getTime();
@@ -85,34 +85,58 @@ public partial class CharacterMovement : ReplicatedProperties {
         //lastKnownTimestamp = estTime;
         lastKnownTimestamp = getTime();
         //Debug.Log("update " + lastKnownTimestamp);
-        if(debugSB == null)
-            debugSB = new StringBuilder(); 
+
+        if (isRouter) {
+            ReceiveUpdateFromHost_OnClient(pos, rot, estTime, _frameVelocity, interpolationMode);
+        }
+
+        if (debugSB == null)
+            debugSB = new StringBuilder();
+    }
+
+    [RPC(isServer = 0, Reliable = false)]
+    public void ReceiveUpdateFromHost(Vector3 pos, Vector3 rot, float estTime, Vector3 _frameVelocity, byte interpolationMode) {
+        //Debug.Log("rpc diff: " + (estTime - lastKnownTimestamp));
+        //BezierStatic.evalBezier()
+        lastKnownPos = pos;
+        lastKnownRot = rot;
+        lastKnownFrameVelocity = _frameVelocity;
+        lastKnownInterpMode = interpolationMode;
+        bezierPoints[0] = transform.position;
+        bezierPoints[1] = bezierPoints[0];
+        bezierPoints[3] = lastKnownPos;
+        bezierPoints[2] = bezierPoints[3] + lastKnownFrameVelocity * 0.01f;
+        //lastKnownTimestamp = estTime;
+        lastKnownTimestamp = getTime();
+        //Debug.Log("update " + lastKnownTimestamp);
+        if (debugSB == null)
+            debugSB = new StringBuilder();
     }
     void performRTTCalculation() {
         int id = Random.Range(0, 65535);
         Pings.Add(new PingStats(getTime(), id));
-        PingServer_OnServer(id);
+        //PingServer_OnServer(id);
     }
     [RPC(isServer = 1, Reliable = false)]
     public void PingServer(int id) {
         PingClient_OnClient(id);
     }
-    
+
     [RPC(isServer = 0, Reliable = false)]
     public void PingClient(int id) {
-        for(int i = 0; i < Pings.Count; ++i) {
-            if(Pings[i].id == id) {
+        for (int i = 0; i < Pings.Count; ++i) {
+            if (Pings[i].id == id) {
                 lastRTT = getTime() - Pings[i].time;
                 Pings.Clear();
                 break;
             }
         }
-        
+
     }
-    protected override void initialReplicationComplete() {
+    public override void initialReplicationComplete() {
         base.initialReplicationComplete();
         Debug.Log("initial rep complete" + role);
-        if (role != GameObjectRoles.Autonomous) {
+        if (role != GameObjectRoles.Autonomous && isHost == 0) {
             cc.enabled = false;
             Debug.Log("disabling cc on non autonomous characters.");
         }
@@ -127,7 +151,7 @@ public partial class CharacterMovement : ReplicatedProperties {
     public void onPossess() {
         lastMousePos = Input.mousePosition;
     }
-    List<dbgFrame> dbgFrames;
+    List<dbgFrame> dbgFrames = null;
     struct dbgFrame {
         public float time;
         public Vector3 selfPos;
@@ -136,9 +160,13 @@ public partial class CharacterMovement : ReplicatedProperties {
         public Vector3 targetVelocity;
         public float RTT;
     }
+    public bool isControlledByOwner { get { return (role == GameObjectRoles.Authority && isHost == 1) || (
+            role == GameObjectRoles.Autonomous); } }
+    public bool isRemote { get { return (role == GameObjectRoles.Authority && isHost == 0) || role == GameObjectRoles.SimulatedProxy; } }
+    public bool isRouter { get { return role == GameObjectRoles.Authority && isHost == 0; } }
     public void update(float deltaTime) {
-        
-        if (role == GameObjectRoles.Autonomous) {
+
+        if (isControlledByOwner) {
             remaining = Pings.Count;
             performRTTCalculation();
             Vector3 preUpdatePos = transform.position;
@@ -149,9 +177,14 @@ public partial class CharacterMovement : ReplicatedProperties {
             frameVelocity.Normalize();
             frameVelocity *= speed;
             float sinceFirstRep = getTime() + timeDiff;
-            ReceiveUpdate_OnServer(transform.position, transform.eulerAngles, sinceFirstRep, frameVelocity, cc.isGrounded ? (byte)1 : (byte)0);
+            if (role == GameObjectRoles.Authority) {
+                ReceiveUpdateFromHost_OnClient(transform.position, transform.eulerAngles, sinceFirstRep, frameVelocity, cc.isGrounded ? (byte)1 : (byte)0);
+            }
+            else {
+                ReceiveUpdate_OnServer(transform.position, transform.eulerAngles, sinceFirstRep, frameVelocity, cc.isGrounded ? (byte)1 : (byte)0);
+            }
         }
-        else if (role == GameObjectRoles.Authority) {
+        else if (isRemote) {
             Vector3 cachedPos = transform.position;
             float timePassedSinceLastKnown = getTime() - lastKnownTimestamp;
             Vector3 predictedPos = Vector3.zero;
@@ -182,6 +215,10 @@ public partial class CharacterMovement : ReplicatedProperties {
             }
             transform.position = cachedPos;
             transform.eulerAngles = lastKnownRot;
+
+            
+
+
             if (dbgFrames != null) {
                 dbgFrame frame = new dbgFrame();
                 frame.time = getTime();
@@ -196,9 +233,9 @@ public partial class CharacterMovement : ReplicatedProperties {
         if (dumpDBGFrames) {
             dumpDBGFrames = false;
             StreamWriter sw = new StreamWriter("dbg_frames.txt", false);
-            for(int i = 0; i < dbgFrames.Count; ++i) {
-                sw.WriteLine("{0};{1},{2},{3};{4},{5},{6};{7},{8},{9};{10},{11},{12};{13}", 
-                    dbgFrames[i].time, 
+            for (int i = 0; i < dbgFrames.Count; ++i) {
+                sw.WriteLine("{0};{1},{2},{3};{4},{5},{6};{7},{8},{9};{10},{11},{12};{13}",
+                    dbgFrames[i].time,
                     dbgFrames[i].selfPos.x, dbgFrames[i].selfPos.y, dbgFrames[i].selfPos.z,
                     dbgFrames[i].selfVelocity.x, dbgFrames[i].selfVelocity.y, dbgFrames[i].selfVelocity.z,
                     dbgFrames[i].targetPos.x, dbgFrames[i].targetPos.y, dbgFrames[i].targetPos.z,
@@ -207,10 +244,85 @@ public partial class CharacterMovement : ReplicatedProperties {
                     );
                 //sw.WriteLine(dbgFrames[i].time + ";" + dbgFrames[i].selfPos + ";" + dbgFrames[i].selfVelocity + ";"+ dbgFrames[i].targetPos + ";" + dbgFrames[i].targetVelocity + dbgFrames[i].RTT);
             }
-            
+
             sw.Close();
         }
     }
+    //public void update(float deltaTime) {
+        
+    //    if (role == GameObjectRoles.Autonomous) {
+    //        remaining = Pings.Count;
+    //        performRTTCalculation();
+    //        Vector3 preUpdatePos = transform.position;
+    //        updateMovement(deltaTime);
+    //        updateLook(deltaTime);
+    //        Vector3 frameVelocity = transform.position - preUpdatePos;
+    //        //frameVelocity /= deltaTime;
+    //        frameVelocity.Normalize();
+    //        frameVelocity *= speed;
+    //        float sinceFirstRep = getTime() + timeDiff;
+    //        ReceiveUpdate_OnServer(transform.position, transform.eulerAngles, sinceFirstRep, frameVelocity, cc.isGrounded ? (byte)1 : (byte)0);
+    //    }
+    //    else if (role == GameObjectRoles.Authority) {
+    //        Vector3 cachedPos = transform.position;
+    //        float timePassedSinceLastKnown = getTime() - lastKnownTimestamp;
+    //        Vector3 predictedPos = Vector3.zero;
+    //        if (lastKnownInterpMode == 1 || true) { // linear interpolation
+    //            //predictedPos = timePassedSinceLastKnown * lastKnownFrameVelocity + lastKnownPos;
+    //            //cachedPos = predictedPos;
+    //            //cachedPos = BezierStatic.evalBezier(bezierPoints[0], bezierPoints[1], bezierPoints[2], bezierPoints[3], timePassedSinceLastKnown * 10f);
+    //            //Debug.LogFormat("vel {0}, lkf vel {1}, tslk {2}, dt {3}", velocity, lastKnownFrameVelocity, timePassedSinceLastKnown, deltaTime);
+    //            Vector3 diffPos = lastKnownPos - cachedPos;
+    //            if (diffPos.magnitude < speed * 1.5f * deltaTime) {
+    //                cachedPos = lastKnownPos;
+    //            }
+    //            else {
+    //                diffPos.Normalize();
+    //                diffPos *= speed * 1.5f;
+    //                velocity = Vector3.Lerp(velocity, diffPos, timePassedSinceLastKnown / 0.5f);
+    //                cachedPos += velocity * deltaTime;
+    //            }
+    //            //cachedPos = (cachedPos + predictedPos) / 2f;
+    //            //Debug.Log("time passed:" + timePassedSinceLastKnown + " last vel: " + lastKnownFrameVelocity + " last pos: " + lastKnownPos);
+    //            //Debug.Log("lerp " + timePassedSinceLastKnown + " lkt " + lastKnownTimestamp);
+    //            //
+
+    //        }
+    //        else {
+    //            // lerp to.
+    //            cachedPos = lastKnownPos;
+    //        }
+    //        transform.position = cachedPos;
+    //        transform.eulerAngles = lastKnownRot;
+    //        if (dbgFrames != null) {
+    //            dbgFrame frame = new dbgFrame();
+    //            frame.time = getTime();
+    //            frame.selfPos = cachedPos;
+    //            frame.selfVelocity = velocity;
+    //            frame.targetPos = lastKnownPos;
+    //            frame.targetVelocity = lastKnownFrameVelocity;
+    //            frame.RTT = lastRTT;
+    //            dbgFrames.Add(frame);
+    //        }
+    //    }
+    //    if (dumpDBGFrames) {
+    //        dumpDBGFrames = false;
+    //        StreamWriter sw = new StreamWriter("dbg_frames.txt", false);
+    //        for(int i = 0; i < dbgFrames.Count; ++i) {
+    //            sw.WriteLine("{0};{1},{2},{3};{4},{5},{6};{7},{8},{9};{10},{11},{12};{13}", 
+    //                dbgFrames[i].time, 
+    //                dbgFrames[i].selfPos.x, dbgFrames[i].selfPos.y, dbgFrames[i].selfPos.z,
+    //                dbgFrames[i].selfVelocity.x, dbgFrames[i].selfVelocity.y, dbgFrames[i].selfVelocity.z,
+    //                dbgFrames[i].targetPos.x, dbgFrames[i].targetPos.y, dbgFrames[i].targetPos.z,
+    //                dbgFrames[i].targetVelocity.x, dbgFrames[i].targetVelocity.y, dbgFrames[i].targetVelocity.z,
+    //                dbgFrames[i].RTT
+    //                );
+    //            //sw.WriteLine(dbgFrames[i].time + ";" + dbgFrames[i].selfPos + ";" + dbgFrames[i].selfVelocity + ";"+ dbgFrames[i].targetPos + ";" + dbgFrames[i].targetVelocity + dbgFrames[i].RTT);
+    //        }
+            
+    //        sw.Close();
+    //    }
+    //}
     public bool dumpDBGFrames;
 
     
