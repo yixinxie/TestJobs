@@ -179,6 +179,9 @@ public class ClientTest : MonoBehaviour
                     offset = bkLength + totalLength;
                 }
             }
+            else {
+                Debug.Log("unrecongized cmd " + opcode);
+            }
         }
         return 0;
     }

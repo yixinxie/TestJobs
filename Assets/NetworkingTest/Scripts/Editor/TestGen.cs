@@ -183,6 +183,7 @@ public partial class %name%{
     }
 
     /** variable reception method(client)*/
+    %stateRep_rb%
     public override bool stateRepReceive(ushort varOffset, byte[] src, ref int offset) {
         if(base.stateRepReceive(varOffset, src, ref offset)) return true;
         switch(varOffset){
@@ -190,11 +191,13 @@ public partial class %name%{
         }
         return true;
     }
+    %stateRep_re%
     
     /** rpc serializers*/
     %rpc_body%
 
     /** rpc reception method(client)*/
+    %rpc_switch_rb%
     public override bool rpcReceive(ushort rpc_id, byte[] src, ref int offset) {
         if(base.rpcReceive(rpc_id, src, ref offset)) return true;
         switch(rpc_id){
@@ -202,6 +205,7 @@ public partial class %name%{
         }
         return true;
     }
+    %rpc_switch_re%
 }
 ";  
     static string generateCSCode(Type thisType)
@@ -213,13 +217,30 @@ public partial class %name%{
         Dictionary<string, string> onRepForVars = generateOnrepCode(thisType);
         sendBody = generateStateRepCode(thisType, out switchBody, out allStateRepList, onRepForVars);
         fullClassText.Replace("%rep_body%", sendBody);
-        fullClassText.Replace("%rep_switch_body%", switchBody);
+        if (string.IsNullOrEmpty(switchBody) == false) {
+            fullClassText.Replace("%rep_switch_body%", switchBody);
+            fullClassText.Replace("%stateRep_rb%", "");
+            fullClassText.Replace("%stateRep_re%", "");
+        }
+        else {
+            fullClassText.Replace("%stateRep_rb%", "/*");
+            fullClassText.Replace("%stateRep_re%", "*/");
+        }
         fullClassText.Replace("%repvarlist%", allStateRepList);
+
 
         string rpcSwitchCode;
         string rpcCode = generateRPCCode(thisType, out rpcSwitchCode);
         fullClassText.Replace("%rpc_body%", rpcCode);
-        fullClassText.Replace("%rpc_switch_body%", rpcSwitchCode);
+        if (string.IsNullOrEmpty(rpcSwitchCode) == false) {
+            fullClassText.Replace("%rpc_switch_body%", rpcSwitchCode);
+            fullClassText.Replace("%rpc_switch_rb%", "");
+            fullClassText.Replace("%rpc_switch_re%", "");
+        }
+        else {
+            fullClassText.Replace("%rpc_switch_rb%", "/*");
+            fullClassText.Replace("%rpc_switch_re%", "*/");
+        }
         return fullClassText.ToString();
     }
 

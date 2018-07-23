@@ -16,6 +16,7 @@ public partial class PlayerState{
     }
 
     /** variable reception method(client)*/
+    
     public override bool stateRepReceive(ushort varOffset, byte[] src, ref int offset) {
         if(base.stateRepReceive(varOffset, src, ref offset)) return true;
         switch(varOffset){
@@ -31,15 +32,18 @@ public partial class PlayerState{
         return true;
     }
     
+    
     /** rpc serializers*/
     
 
     /** rpc reception method(client)*/
+    /*
     public override bool rpcReceive(ushort rpc_id, byte[] src, ref int offset) {
         if(base.rpcReceive(rpc_id, src, ref offset)) return true;
         switch(rpc_id){
-            
+            %rpc_switch_body%
         }
         return true;
     }
+    */
 }

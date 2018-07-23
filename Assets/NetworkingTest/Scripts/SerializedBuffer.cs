@@ -100,6 +100,25 @@ public class SerializedBuffer{
         doubleCapacityIfRequired();
     }
 
+    public void repVar(int component_id, ushort offsetId, byte byteVal) {
+        // netopcode, ushort
+        serializeUShort((ushort)NetOpCodes.Replication);
+
+        // total length, ushort
+        serializeUShort(7);
+
+        // component id, int
+        serializeInt(component_id);
+
+        // offset id, variable id, ushort
+        serializeUShort(offsetId);
+
+        // byte value
+        serializeByte(byteVal);
+        commandCount++;
+        doubleCapacityIfRequired();
+    }
+
     public void repVar(int component_id, ushort offsetId, float floatVal) {
         // netopcode, ushort
         serializeUShort((ushort)NetOpCodes.Replication);

@@ -329,9 +329,7 @@ public class TubeSimulate : MonoBehaviour {
             //tubes[0].push();
         }
         //float deltaTime = Time.deltaTime;
-        if(elapsedTime > 9.733f) {
-            int sdf = 0;
-        }
+
         float deltaTime = 0.016667f;
         elapsedTime += deltaTime;
         generic[0].update(deltaTime);

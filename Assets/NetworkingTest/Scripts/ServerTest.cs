@@ -298,6 +298,22 @@ public class ServerTest : MonoBehaviour {
             }
         }
     }
+
+    public void repVar(int component_id, ushort var_id, byte val, byte rep_mode, int conn_id = -1) {
+        if (conn_id >= 0) {
+            int idx = getIndexByConnectionId(conn_id);
+            if (idx >= 0) {
+
+                playerOwned[idx].sendBuffers[0].repVar(component_id, var_id, val);
+            }
+        }
+        else {
+            for (int i = 0; i < playerOwned.Count; ++i) {
+                if (playerOwned[i].connectionId == ServerPSId) continue;
+                playerOwned[i].sendBuffers[0].repVar(component_id, var_id, val);
+            }
+        }
+    }
     
     public void rpcBegin(int component_id, ushort rpc_id, byte mode, int owner_id) {
         rpcSessionMode = mode;
@@ -368,15 +384,17 @@ public class ServerTest : MonoBehaviour {
         {
             PlayerOwnedInfo poi = playerOwned[i];
             if (poi.connectionId == ServerPSId) continue;
-            if (poi.sendBuffers[i * 2].getCommandCount() > 0) {
-                poi.sendBuffers[i * 2].seal();
-                NetworkTransport.Send(socketId, poi.connectionId, reliableCHN, poi.sendBuffers[i * 2].getBuffer(), poi.sendBuffers[i * 2].getOffset(), out error);
-                poi.sendBuffers[i * 2].reset();
+            SerializedBuffer buffer_reliable = poi.sendBuffers[0];
+            SerializedBuffer buffer_unreliable = poi.sendBuffers[1];
+            if (buffer_reliable.getCommandCount() > 0) {
+                buffer_reliable.seal();
+                NetworkTransport.Send(socketId, poi.connectionId, reliableCHN, buffer_reliable.getBuffer(), buffer_reliable.getOffset(), out error);
+                buffer_reliable.reset();
             }
-            if (poi.sendBuffers[i * 2 + 1].getCommandCount() > 0) {
-                poi.sendBuffers[i * 2 + 1].seal();
-                NetworkTransport.Send(socketId, poi.connectionId, unreliableCHN, poi.sendBuffers[i * 2 + 1].getBuffer(), poi.sendBuffers[i * 2 + 1].getOffset(), out error);
-                poi.sendBuffers[i * 2 + 1].reset();
+            if (buffer_unreliable.getCommandCount() > 0) {
+                buffer_unreliable.seal();
+                NetworkTransport.Send(socketId, poi.connectionId, unreliableCHN, buffer_unreliable.getBuffer(), buffer_unreliable.getOffset(), out error);
+                buffer_unreliable.reset();
             }
         }
     }
