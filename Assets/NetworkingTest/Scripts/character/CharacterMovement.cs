@@ -11,8 +11,6 @@ public partial class CharacterMovement : ReplicatedProperties {
     public float gravity = 9.8f;
     [Replicated]
     public float serverTime;
-    //[Replicated]
-    //public byte isHost;
     public Transform TPCameraTrans;
     Vector3 lastMousePos;
     float skinWidth;
@@ -151,15 +149,15 @@ public partial class CharacterMovement : ReplicatedProperties {
     public void onPossess() {
         lastMousePos = Input.mousePosition;
     }
-    List<dbgFrame> dbgFrames = null;
-    struct dbgFrame {
-        public float time;
-        public Vector3 selfPos;
-        public Vector3 selfVelocity;
-        public Vector3 targetPos;
-        public Vector3 targetVelocity;
-        public float RTT;
-    }
+    //List<dbgFrame> dbgFrames = null;
+    //struct dbgFrame {
+    //    public float time;
+    //    public Vector3 selfPos;
+    //    public Vector3 selfVelocity;
+    //    public Vector3 targetPos;
+    //    public Vector3 targetVelocity;
+    //    public float RTT;
+    //}
     public bool isControlledByOwner { get { return (role == GameObjectRoles.Authority && isHost == 1) || (
             role == GameObjectRoles.Autonomous); } }
     public bool isRemote { get { return (role == GameObjectRoles.Authority && isHost == 0) || role == GameObjectRoles.SimulatedProxy; } }
@@ -219,34 +217,34 @@ public partial class CharacterMovement : ReplicatedProperties {
             
 
 
-            if (dbgFrames != null) {
-                dbgFrame frame = new dbgFrame();
-                frame.time = getTime();
-                frame.selfPos = cachedPos;
-                frame.selfVelocity = velocity;
-                frame.targetPos = lastKnownPos;
-                frame.targetVelocity = lastKnownFrameVelocity;
-                frame.RTT = lastRTT;
-                dbgFrames.Add(frame);
-            }
+            //if (dbgFrames != null) {
+            //    dbgFrame frame = new dbgFrame();
+            //    frame.time = getTime();
+            //    frame.selfPos = cachedPos;
+            //    frame.selfVelocity = velocity;
+            //    frame.targetPos = lastKnownPos;
+            //    frame.targetVelocity = lastKnownFrameVelocity;
+            //    frame.RTT = lastRTT;
+            //    dbgFrames.Add(frame);
+            //}
         }
-        if (dumpDBGFrames) {
-            dumpDBGFrames = false;
-            StreamWriter sw = new StreamWriter("dbg_frames.txt", false);
-            for (int i = 0; i < dbgFrames.Count; ++i) {
-                sw.WriteLine("{0};{1},{2},{3};{4},{5},{6};{7},{8},{9};{10},{11},{12};{13}",
-                    dbgFrames[i].time,
-                    dbgFrames[i].selfPos.x, dbgFrames[i].selfPos.y, dbgFrames[i].selfPos.z,
-                    dbgFrames[i].selfVelocity.x, dbgFrames[i].selfVelocity.y, dbgFrames[i].selfVelocity.z,
-                    dbgFrames[i].targetPos.x, dbgFrames[i].targetPos.y, dbgFrames[i].targetPos.z,
-                    dbgFrames[i].targetVelocity.x, dbgFrames[i].targetVelocity.y, dbgFrames[i].targetVelocity.z,
-                    dbgFrames[i].RTT
-                    );
-                //sw.WriteLine(dbgFrames[i].time + ";" + dbgFrames[i].selfPos + ";" + dbgFrames[i].selfVelocity + ";"+ dbgFrames[i].targetPos + ";" + dbgFrames[i].targetVelocity + dbgFrames[i].RTT);
-            }
+        //if (dumpDBGFrames) {
+        //    dumpDBGFrames = false;
+        //    StreamWriter sw = new StreamWriter("dbg_frames.txt", false);
+        //    for (int i = 0; i < dbgFrames.Count; ++i) {
+        //        sw.WriteLine("{0};{1},{2},{3};{4},{5},{6};{7},{8},{9};{10},{11},{12};{13}",
+        //            dbgFrames[i].time,
+        //            dbgFrames[i].selfPos.x, dbgFrames[i].selfPos.y, dbgFrames[i].selfPos.z,
+        //            dbgFrames[i].selfVelocity.x, dbgFrames[i].selfVelocity.y, dbgFrames[i].selfVelocity.z,
+        //            dbgFrames[i].targetPos.x, dbgFrames[i].targetPos.y, dbgFrames[i].targetPos.z,
+        //            dbgFrames[i].targetVelocity.x, dbgFrames[i].targetVelocity.y, dbgFrames[i].targetVelocity.z,
+        //            dbgFrames[i].RTT
+        //            );
+        //        //sw.WriteLine(dbgFrames[i].time + ";" + dbgFrames[i].selfPos + ";" + dbgFrames[i].selfVelocity + ";"+ dbgFrames[i].targetPos + ";" + dbgFrames[i].targetVelocity + dbgFrames[i].RTT);
+        //    }
 
-            sw.Close();
-        }
+        //    sw.Close();
+        //}
     }
     //public void update(float deltaTime) {
         

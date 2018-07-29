@@ -12,6 +12,7 @@ enum NetOpCodes : ushort {
     SpawnPrefab, // string, replicate a prefab from server to clients.
     RPCFunc, // rpc
     Replication, // replication of variable
+    ObjectLinking,
 }
 
 public struct GameObjectSpawnInfo {
@@ -48,9 +49,6 @@ public class ServerTest : MonoBehaviour {
 
     byte[] recvBuffer;
 
-    //List<int> playerStates;
-    //List<SerializedBuffer> sendBuffers;
-    //List<List<GameObjectSpawnInfo>> gameObjectsByOwner; // player controller(connection) id, owned NetGOs.
     List<PlayerOwnedInfo> playerOwned;
     Dictionary<int, ReplicatedProperties> synchronizedComponents; // instance id, game object
     List<int> newConnectionList;
@@ -88,7 +86,12 @@ public class ServerTest : MonoBehaviour {
     private void Start() {
         GameObject go = createServerGameObject(PlayerStatePrefabPath);
         PlayerState ps = go.GetComponent<PlayerState>();
-        ps.isHost = true;
+        ps.isHost = 1; 
+
+        List<INeutralObject> npcs = PendingNetworkObjects.self.getNPCs();
+        for(int i = 0; i < npcs.Count; ++i) {
+            npcs[i].onServerInitialized();
+        }
     }
     public GameObject createServerGameObject(string path) {
         int[] goid;
@@ -109,6 +112,9 @@ public class ServerTest : MonoBehaviour {
             playerOwned[idx].gameObjectsOwned.Add(gosi);
         }
         return pcgo;
+    }
+    public void addNPCsToSyncList(ReplicatedProperties rep) {
+        synchronizedComponents.Add(rep.server_id, rep);
     }
 
     public void replicateExistingGameObjectsToNewClient(int connId) {

@@ -23,7 +23,7 @@ public enum GameObjectRoles : byte {
  * on host: authority
  * on guest: autonomous, simulated proxy
  */
-public class ReplicatedProperties : MonoBehaviour {
+public class ReplicatedProperties : MonoBehaviour, INeutralObject {
 
     public int owner = -65535;
     protected int goId; // id on server.
@@ -112,5 +112,8 @@ public class ReplicatedProperties : MonoBehaviour {
 
         }
         return ret;
+    }
+    public void onServerInitialized() {
+        ServerTest.self.addNPCsToSyncList(this);
     }
 }

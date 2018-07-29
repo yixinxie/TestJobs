@@ -71,10 +71,12 @@
     <Compile Include="Assets\NetworkingTest\Scripts\character\CameraUtils.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\character\CharacterMovement.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\character\FPSCharacter.cs" />
+    <Compile Include="Assets\NetworkingTest\Scripts\character\NPCharacter.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\CharacterMovement_generated.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\ClientTest.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\FPSCharacter_generated.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\NetworkTestStart.cs" />
+    <Compile Include="Assets\NetworkingTest\Scripts\PendingNetworkObjects.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\PlayerState.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\PlayerState_generated.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\ReflectionAttr.cs" />
