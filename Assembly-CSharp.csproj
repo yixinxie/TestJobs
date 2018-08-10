@@ -64,6 +64,13 @@
     <Compile Include="Assets\JobTest\ConverterDebug.cs" />
     <Compile Include="Assets\JobTest\GeneratorData.cs" />
     <Compile Include="Assets\JobTest\GenericJob.cs" />
+    <Compile Include="Assets\JobTest\sim_oop\Assembler.cs" />
+    <Compile Include="Assets\JobTest\sim_oop\Belt.cs" />
+    <Compile Include="Assets\JobTest\sim_oop\Inserter.cs" />
+    <Compile Include="Assets\JobTest\sim_oop\Producer.cs" />
+    <Compile Include="Assets\JobTest\sim_oop\SimManager.cs" />
+    <Compile Include="Assets\JobTest\sim_oop\SimulatorData.cs" />
+    <Compile Include="Assets\JobTest\sim_oop\Storage.cs" />
     <Compile Include="Assets\JobTest\TestArray.cs" />
     <Compile Include="Assets\JobTest\TubeData.cs" />
     <Compile Include="Assets\JobTest\TubeSimulate.cs" />
@@ -84,6 +91,7 @@
     <Compile Include="Assets\NetworkingTest\Scripts\SerializedBuffer.cs" />
     <Compile Include="Assets\NetworkingTest\Scripts\ServerTest.cs" />
     <Compile Include="Assets\RenderTest\ChangeMat.cs" />
+    <Compile Include="Assets\RenderTest\MeshStats.cs" />
     <Reference Include="UnityEditor.StandardEvents">
       <HintPath>E:/TestJobs/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>
     </Reference>
