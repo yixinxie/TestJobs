@@ -35,19 +35,73 @@ namespace Simulation_OOP {
             beltGO = new List<Belt>();
             inserterGO = new List<Inserter>();
         }
-        private void Start() {
+        public void addGenerator(Vector3 pos) {
             ProducerData p = new ProducerData();
             p.itemId = 1;
             producers.Add(p);
 
+            GameObject go = GameObject.Instantiate(producerPrefab, pos, Quaternion.identity) as GameObject;
+            Producer comp = go.GetComponent<Producer>();
+            
+            comp.target = p;
+            producerGO.Add(comp);
+        }
+        public void addBelt (Vector3 pos) {
+            ProducerData p = new ProducerData();
+            p.itemId = 1;
+            producers.Add(p);
+
+            GameObject go = GameObject.Instantiate(producerPrefab, pos, Quaternion.identity) as GameObject;
+            Producer comp = go.GetComponent<Producer>();
+
+            comp.target = p;
+            producerGO.Add(comp);
+        }
+        public void addInserter(Vector3 pos) {
+            ProducerData p = new ProducerData();
+            p.itemId = 1;
+            producers.Add(p);
+
+            GameObject go = GameObject.Instantiate(producerPrefab, pos, Quaternion.identity) as GameObject;
+            Producer comp = go.GetComponent<Producer>();
+
+            comp.target = p;
+            producerGO.Add(comp);
+        }
+        public void addAssembler(Vector3 pos) {
+            AssemblerData p = new AssemblerData();
+            //p.itemId = 1;
+            assemblers.Add(p);
+
+            GameObject go = GameObject.Instantiate(producerPrefab, pos, Quaternion.identity) as GameObject;
+            Assembler comp = go.GetComponent<Assembler>();
+
+            comp.target = p;
+            assemblerGO.Add(comp);
+        }
+        public void addStorage(Vector3 pos) {
             StorageData stor = new StorageData();
             storages.Add(stor);
 
-            InserterData ins = new InserterData();
-            inserters.Add(ins);
-            ins.source = p;
-            ins.target = stor;
-            ins.expectedItemId = 1;
+            GameObject go = GameObject.Instantiate(storagePrefab, pos, Quaternion.identity) as GameObject;
+            Storage comp = go.GetComponent<Storage>();
+
+            comp.target = stor;
+            storageGO.Add(comp);
+        }
+        private void Start() {
+            //ProducerData p = new ProducerData();
+            //p.itemId = 1;
+            //producers.Add(p);
+
+            //StorageData stor = new StorageData();
+            //storages.Add(stor);
+
+            //InserterData ins = new InserterData();
+            //inserters.Add(ins);
+            //ins.source = p;
+            //ins.target = stor;
+            //ins.expectedItemId = 1;
 
             for (int i = 0; i < belts.Count; ++i) {
                 GameObject go = GameObject.Instantiate(beltPrefab) as GameObject;
