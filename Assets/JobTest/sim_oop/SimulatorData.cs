@@ -12,7 +12,7 @@ namespace Simulation_OOP {
         public float[] positions;
 
         public int count;
-        public float physicalLength;
+        public float tubeLength;
         public float speed;
         public float itemHalfWidth;
         public const int Length = 10;
@@ -20,7 +20,7 @@ namespace Simulation_OOP {
             positions = new float[Length];
             itemIds = new ushort[Length];
             count = 0;
-            physicalLength = 10f;
+            tubeLength = 10f;
         }
 
         short canInsert(float pos) {
@@ -35,7 +35,7 @@ namespace Simulation_OOP {
                     return i;
                 }
             }
-            if (pos > positions[i] && pos < physicalLength - itemHalfWidth * 2f) {
+            if (pos > positions[i] && pos < tubeLength - itemHalfWidth * 2f) {
                 return i;
             }
             return -1;
@@ -83,8 +83,8 @@ namespace Simulation_OOP {
             for (int i = count - 1; i >= 0; --i) {
                 positions[i] += dt * speed;
                 if (i == count - 1) {
-                    if (positions[i] > physicalLength) {
-                        positions[i] = physicalLength;
+                    if (positions[i] > tubeLength) {
+                        positions[i] = tubeLength;
                     }
                 }
                 else {
