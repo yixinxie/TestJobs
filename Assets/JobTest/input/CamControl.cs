@@ -46,7 +46,7 @@ public class CamControl : MonoBehaviour {
                             SimManager.self.addInserter(pointedAt);
                             break;
                         case 2:
-                            SimManager.self.addBelt(pointedAt);
+                            //SimManager.self.addBelt(pointedAt);
                             break;
                         case 3:
                             SimManager.self.addAssembler(pointedAt);

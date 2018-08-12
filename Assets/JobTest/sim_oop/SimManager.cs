@@ -46,11 +46,11 @@ namespace Simulation_OOP {
             comp.target = p;
             producerGO.Add(comp);
         }
-        public void addBelt (Vector3 pos) {
+        public void addBelt (Vector3 fromPos, Vector3 toPos) {
             BeltData p = new BeltData();
             belts.Add(p);
 
-            GameObject go = GameObject.Instantiate(beltPrefab, pos, Quaternion.identity) as GameObject;
+            GameObject go = GameObject.Instantiate(beltPrefab, (fromPos+toPos) / 2f, Quaternion.identity) as GameObject;
             Belt comp = go.GetComponent<Belt>();
 
             comp.target = p;
@@ -66,8 +66,36 @@ namespace Simulation_OOP {
             comp.target = p;
             inserterGO.Add(comp);
         }
-        void surroundingCheck() {
+        void surroundingCheck(Vector3 pos, InserterData inserterData) {
+            // inserter check
+            // generator to belt
+            // belt to storage
+            // generator to storage
+            // assembler to storage
+            // generator to assembler
+            // get inserter's surrounding
+            Vector3[] offsets = new Vector3[4] { Vector3.left, Vector3.right, Vector3.forward, Vector3.back };
+            RaycastHit hit;
+            ISimData[] adjacentTypes = new ISimData[4];
+            for (int i = 0; i < 4; ++i) {
+                if(Physics.Raycast(pos + offsets[i] + Vector3.up * 5f, Vector3.down, out hit, 5f)) {
+                    ISimData simData = hit.collider.GetComponent<ISimData>();
+                    adjacentTypes[i] = simData;
 
+                }
+            }
+            for(int i = 0; i < 4; ++i) {
+                Producer generator = adjacentTypes[i] as Producer;
+                if(generator != null) {
+                    Belt belt = adjacentTypes[(i + 2) % 4] as Belt;
+                    if(belt != null) {
+                        inserterData.expectedItemId = generator.target.itemId;
+                        inserterData.source = generator.target;
+                        inserterData.target = belt.target;
+                        inserterData.targetPos = 0f;
+                    }
+                }
+            }
         }
         public void addAssembler(Vector3 pos) {
             AssemblerData p = new AssemblerData();
@@ -103,40 +131,40 @@ namespace Simulation_OOP {
             //ins.target = stor;
             //ins.expectedItemId = 1;
 
-            for (int i = 0; i < belts.Count; ++i) {
-                GameObject go = GameObject.Instantiate(beltPrefab) as GameObject;
-                Belt comp = go.GetComponent<Belt>();
-                comp.target = belts[i];
-                beltGO.Add(comp);
-            }
+            //for (int i = 0; i < belts.Count; ++i) {
+            //    GameObject go = GameObject.Instantiate(beltPrefab) as GameObject;
+            //    Belt comp = go.GetComponent<Belt>();
+            //    comp.target = belts[i];
+            //    beltGO.Add(comp);
+            //}
 
-            for (int i = 0; i < storages.Count; ++i) {
-                GameObject go = GameObject.Instantiate(storagePrefab) as GameObject;
-                Storage comp = go.GetComponent<Storage>();
-                comp.target = storages[i];
-                storageGO.Add(comp);
-            }
+            //for (int i = 0; i < storages.Count; ++i) {
+            //    GameObject go = GameObject.Instantiate(storagePrefab) as GameObject;
+            //    Storage comp = go.GetComponent<Storage>();
+            //    comp.target = storages[i];
+            //    storageGO.Add(comp);
+            //}
 
-            for (int i = 0; i < assemblers.Count; ++i) {
-                GameObject go = GameObject.Instantiate(assemblerPrefab) as GameObject;
-                Assembler comp = go.GetComponent<Assembler>();
-                comp.target = assemblers[i];
-                assemblerGO.Add(comp);
-            }
+            //for (int i = 0; i < assemblers.Count; ++i) {
+            //    GameObject go = GameObject.Instantiate(assemblerPrefab) as GameObject;
+            //    Assembler comp = go.GetComponent<Assembler>();
+            //    comp.target = assemblers[i];
+            //    assemblerGO.Add(comp);
+            //}
 
-            for (int i = 0; i < producers.Count; ++i) {
-                GameObject go = GameObject.Instantiate(producerPrefab) as GameObject;
-                Producer comp = go.GetComponent<Producer>();
-                comp.target = producers[i];
-                producerGO.Add(comp);
-            }
+            //for (int i = 0; i < producers.Count; ++i) {
+            //    GameObject go = GameObject.Instantiate(producerPrefab) as GameObject;
+            //    Producer comp = go.GetComponent<Producer>();
+            //    comp.target = producers[i];
+            //    producerGO.Add(comp);
+            //}
 
-            for (int i = 0; i < inserters.Count; ++i) {
-                GameObject go = GameObject.Instantiate(inserterPrefab) as GameObject;
-                Inserter comp = go.GetComponent<Inserter>();
-                comp.target = inserters[i];
-                inserterGO.Add(comp);
-            }
+            //for (int i = 0; i < inserters.Count; ++i) {
+            //    GameObject go = GameObject.Instantiate(inserterPrefab) as GameObject;
+            //    Inserter comp = go.GetComponent<Inserter>();
+            //    comp.target = inserters[i];
+            //    inserterGO.Add(comp);
+            //}
         }
         void FixedUpdate() {
             float dt = Time.fixedDeltaTime;
