@@ -7,11 +7,13 @@ public class UIControll : MonoBehaviour {
     public RectTransform group;
 
     public RectTransform revealButton;
+    public GameObject structureGhost;
     byte buildPhase;
     int buildStructureId;
     private void Awake() {
         self = this;
         group.gameObject.SetActive(false);
+        structureGhost.SetActive(false);
 
     }
     public void onBuildPressed() {
@@ -22,6 +24,7 @@ public class UIControll : MonoBehaviour {
     public void onBuildReleased() {
         revealButton.gameObject.SetActive(true);
         group.gameObject.SetActive(false);
+        structureGhost.SetActive(true);
         if (buildPhase == 1)
             buildPhase = 2;
     }
@@ -30,6 +33,7 @@ public class UIControll : MonoBehaviour {
     }
     public void resetBuildEvent() {
         buildPhase = 0;
+        structureGhost.SetActive(false);
     }
     public void setBuildStructure(int idx) {
         buildStructureId = idx;
@@ -37,5 +41,11 @@ public class UIControll : MonoBehaviour {
     public int getBuildStructure() {
         return buildStructureId;
     }
-    
+    private void Update() {
+        if(buildPhase == 2) {
+
+            structureGhost.transform.position = CamControl.self.pointedAt;
+        }
+    }
+
 }

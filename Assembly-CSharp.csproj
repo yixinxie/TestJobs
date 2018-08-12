@@ -64,7 +64,7 @@
     <Compile Include="Assets\JobTest\ConverterDebug.cs" />
     <Compile Include="Assets\JobTest\GeneratorData.cs" />
     <Compile Include="Assets\JobTest\GenericJob.cs" />
-    <Compile Include="Assets\JobTest\input\CamControll.cs" />
+    <Compile Include="Assets\JobTest\input\CamControl.cs" />
     <Compile Include="Assets\JobTest\input\UIControll.cs" />
     <Compile Include="Assets\JobTest\sim_oop\Assembler.cs" />
     <Compile Include="Assets\JobTest\sim_oop\Belt.cs" />

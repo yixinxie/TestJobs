@@ -47,33 +47,33 @@ namespace Simulation_OOP {
             producerGO.Add(comp);
         }
         public void addBelt (Vector3 pos) {
-            ProducerData p = new ProducerData();
-            p.itemId = 1;
-            producers.Add(p);
+            BeltData p = new BeltData();
+            belts.Add(p);
 
-            GameObject go = GameObject.Instantiate(producerPrefab, pos, Quaternion.identity) as GameObject;
-            Producer comp = go.GetComponent<Producer>();
+            GameObject go = GameObject.Instantiate(beltPrefab, pos, Quaternion.identity) as GameObject;
+            Belt comp = go.GetComponent<Belt>();
 
             comp.target = p;
-            producerGO.Add(comp);
+            beltGO.Add(comp);
         }
         public void addInserter(Vector3 pos) {
-            ProducerData p = new ProducerData();
-            p.itemId = 1;
-            producers.Add(p);
+            InserterData p = new InserterData();
+            inserters.Add(p);
 
-            GameObject go = GameObject.Instantiate(producerPrefab, pos, Quaternion.identity) as GameObject;
-            Producer comp = go.GetComponent<Producer>();
+            GameObject go = GameObject.Instantiate(inserterPrefab, pos, Quaternion.identity) as GameObject;
+            Inserter comp = go.GetComponent<Inserter>();
 
             comp.target = p;
-            producerGO.Add(comp);
+            inserterGO.Add(comp);
+        }
+        void surroundingCheck() {
+
         }
         public void addAssembler(Vector3 pos) {
             AssemblerData p = new AssemblerData();
-            //p.itemId = 1;
             assemblers.Add(p);
 
-            GameObject go = GameObject.Instantiate(producerPrefab, pos, Quaternion.identity) as GameObject;
+            GameObject go = GameObject.Instantiate(assemblerPrefab, pos, Quaternion.identity) as GameObject;
             Assembler comp = go.GetComponent<Assembler>();
 
             comp.target = p;
