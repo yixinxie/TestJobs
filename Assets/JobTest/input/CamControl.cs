@@ -33,7 +33,8 @@ public class CamControl : MonoBehaviour {
             pointedAt.y = 0f;
         }
         if (Input.GetMouseButtonUp(0)) {
-            if (UIControll.self.isBuildEvent()) {
+            byte buildPhase = UIControll.self.getBuildPhase();
+            if (buildPhase == 2) {
                 //Ray ray = cam.ScreenPointToRay(Input.mousePosition);
                 //RaycastHit hit;
                 if (rayhit) {
@@ -55,6 +56,19 @@ public class CamControl : MonoBehaviour {
                             SimManager.self.addStorage(pointedAt);
                             break;
                     }
+                }
+            }
+        }
+        //if (Input.GetMouseButtonDown(0)) 
+            {
+            byte buildPhase = UIControll.self.getBuildPhase();
+            if(buildPhase == 3) {
+                //Debug.Log("belt mode");
+                if (Input.GetMouseButtonDown(0)) {
+                    Debug.Log("belt begin " + Input.mousePosition);
+                }
+                else if(Input.GetMouseButtonUp(0)){
+                    Debug.Log("belt end " + Input.mousePosition);
                 }
             }
         }

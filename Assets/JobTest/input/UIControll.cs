@@ -8,12 +8,15 @@ public class UIControll : MonoBehaviour {
 
     public RectTransform revealButton;
     public GameObject structureGhost;
+    public RectTransform beltButton;
+    public RectTransform beltExitButton;
     byte buildPhase;
     int buildStructureId;
     private void Awake() {
         self = this;
         group.gameObject.SetActive(false);
         structureGhost.SetActive(false);
+        beltExitButton.gameObject.SetActive(false);
 
     }
     public void onBuildPressed() {
@@ -28,8 +31,8 @@ public class UIControll : MonoBehaviour {
         if (buildPhase == 1)
             buildPhase = 2;
     }
-    public bool isBuildEvent() {
-        return buildPhase == 2;
+    public byte getBuildPhase() {
+        return buildPhase;
     }
     public void resetBuildEvent() {
         buildPhase = 0;
@@ -40,6 +43,16 @@ public class UIControll : MonoBehaviour {
     }
     public int getBuildStructure() {
         return buildStructureId;
+    }
+    public void onBeltPressed() {
+        beltButton.gameObject.SetActive(false);
+        beltExitButton.gameObject.SetActive(true);
+        buildPhase = 3;
+    }
+    public void onBeltModeEnded() {
+        beltButton.gameObject.SetActive(true);
+        beltExitButton.gameObject.SetActive(false);
+        buildPhase = 0;
     }
     private void Update() {
         if(buildPhase == 2) {
