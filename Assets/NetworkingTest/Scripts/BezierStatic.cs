@@ -6,6 +6,7 @@ public class BezierStatic : MonoBehaviour {
     public Transform[] targets;
     Vector3[] positions;
     Vector3[] four;
+    
     public static Vector3 evalBezier(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t) {
         //Vector3 ret;
         //ret.x = Mathf.Pow(1 - t, 3f) * p0.x + 3f * Mathf.Pow(1 - t, 2f) * t * p1.x + 3f * (1 - t) * Mathf.Pow(t, 2f) * p2.x + 3 * Mathf.Pow(t, 3f) * p3.x;
@@ -29,9 +30,13 @@ public class BezierStatic : MonoBehaviour {
         for(int i = 0; i < targets.Length; ++i) {
             positions[i] = targets[i].position;
         }
-        
-        Belt.setPath(positions, smoothness);
-
+        //List<Vector3> verts = new List<Vector3>();
+        //mfilter.mesh.GetVertices(verts);
+        //List<int> indices = new List<int>();
+        //mfilter.mesh.GetIndices(indices, 0);
+        //Belt.setPath(positions, smoothness, verts, indices);
+        //mfilter.mesh.SetVertices(verts);
+        //mfilter.mesh.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
     }
     
 }
