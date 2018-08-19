@@ -35,16 +35,28 @@ namespace Simulation_OOP {
             beltGO = new List<Belt>();
             inserterGO = new List<Inserter>();
         }
-        public void addGenerator(Vector3 pos) {
+        public bool addGenerator(Vector3 pos) {
+            RaycastHit hitInfo;
+            if(Physics.Raycast(pos + Vector3.up, Vector3.down, out hitInfo, 2f) == false) {
+                return false;
+            }
+            ResourceNode rnode = hitInfo.collider.gameObject.GetComponent<ResourceNode>();
+            if (rnode == null)
+                return false;
+
             ProducerData p = new ProducerData();
             p.itemId = 1;
             producers.Add(p);
+
+
 
             GameObject go = GameObject.Instantiate(producerPrefab, pos, Quaternion.identity) as GameObject;
             Producer comp = go.GetComponent<Producer>();
             
             comp.target = p;
             producerGO.Add(comp);
+            comp.initialize(rnode);
+            return true;
         }
         public void addBelt (Vector3 fromPos, Vector3 toPos) {
             BeltData p = new BeltData();
@@ -55,6 +67,10 @@ namespace Simulation_OOP {
 
             comp.target = p;
             beltGO.Add(comp);
+            Vector3[] temp = new Vector3[2];
+            temp[0] = fromPos;
+            temp[1] = toPos;
+            comp.refreshMesh(temp);
         }
         public void addInserter(Vector3 pos) {
             InserterData p = new InserterData();
@@ -65,8 +81,10 @@ namespace Simulation_OOP {
 
             comp.target = p;
             inserterGO.Add(comp);
+
+            surroundingCheck(pos, p, comp);
         }
-        void surroundingCheck(Vector3 pos, InserterData inserterData) {
+        void surroundingCheck(Vector3 pos, InserterData inserterData, Inserter inserter) {
             // inserter check
             // generator to belt
             // belt to storage
@@ -78,22 +96,29 @@ namespace Simulation_OOP {
             RaycastHit hit;
             ISimData[] adjacentTypes = new ISimData[4];
             for (int i = 0; i < 4; ++i) {
-                if(Physics.Raycast(pos + offsets[i] + Vector3.up * 5f, Vector3.down, out hit, 5f)) {
-                    ISimData simData = hit.collider.GetComponent<ISimData>();
-                    adjacentTypes[i] = simData;
+                if (Physics.Raycast(pos + offsets[i] + Vector3.up * 2f, Vector3.down, out hit, 2f, LayerMask.GetMask("Default" ))) {
+                    ISimView simData = hit.collider.GetComponent<ISimView>();
+                    adjacentTypes[i] = simData.getTarget();
 
                 }
             }
             for(int i = 0; i < 4; ++i) {
-                Producer generator = adjacentTypes[i] as Producer;
+                ProducerData generator = adjacentTypes[i] as ProducerData;
                 if(generator != null) {
-                    Belt belt = adjacentTypes[(i + 2) % 4] as Belt;
+                    BeltData belt = adjacentTypes[(i + 2) % 4] as BeltData;
                     if(belt != null) {
-                        inserterData.expectedItemId = generator.target.itemId;
-                        inserterData.source = generator.target;
-                        inserterData.target = belt.target;
-                        inserterData.targetPos = 0f;
+                        
                     }
+                    inserterData.expectedItemId = generator.itemId;
+                    inserterData.source = generator;
+                    inserterData.target = belt;
+                    inserterData.targetPos = 0f;
+                    inserterData.source = (ISimData)generator;
+                    inserterData.target = (ISimData)belt;
+                    inserterData.targetPos = 0f;
+                    inserter.head = generator.ToString();
+                    if(belt != null)
+                        inserter.head = belt.ToString();
                 }
             }
         }

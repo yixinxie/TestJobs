@@ -21,7 +21,6 @@ GameObject:
   - component: {fileID: 4374418432639500}
   - component: {fileID: 33365279985197110}
   - component: {fileID: 23616957004496226}
-  - component: {fileID: 65552547171113558}
   m_Layer: 0
   m_Name: mesh
   m_TagString: Untagged
@@ -38,6 +37,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4629303282963764}
   - component: {fileID: 114462034025819848}
+  - component: {fileID: 65137986028974180}
   m_Layer: 0
   m_Name: Storage
   m_TagString: Untagged
@@ -114,17 +114,17 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1147085494467300}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!65 &65552547171113558
+--- !u!65 &65137986028974180
 BoxCollider:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1147085494467300}
+  m_GameObject: {fileID: 1952217883941426}
   m_Material: {fileID: 0}
   m_IsTrigger: 0
   m_Enabled: 1
   serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
+  m_Size: {x: 3, y: 0.2, z: 3}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &114462034025819848
 MonoBehaviour:
@@ -137,3 +137,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a769c1a60fcb1da4ca463959424cca51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  count: 0

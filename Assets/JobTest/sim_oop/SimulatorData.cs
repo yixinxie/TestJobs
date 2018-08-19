@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 namespace Simulation_OOP {
+    public interface ISimView {
+        ISimData getTarget();
+    }
     public interface ISimData {
 
         bool attemptToInsert(ushort _itemId, float pos);
@@ -95,7 +98,7 @@ namespace Simulation_OOP {
             }
         }
     }
-    public class InserterData {
+    public class InserterData : ISimData {
         public ushort expectedItemId;
         public float sourcePos;
         public float targetPos;
@@ -121,6 +124,14 @@ namespace Simulation_OOP {
                     }
                 }
             }
+        }
+
+        public bool attemptToInsert(ushort _itemId, float pos) {
+            return false;
+        }
+
+        public bool attemptToRemove(ushort itemId, float atPos) {
+            return false;
         }
     }
     public class ProducerData : ISimData {

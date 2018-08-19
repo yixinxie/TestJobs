@@ -2,20 +2,56 @@
 using System.Collections.Generic;
 using UnityEngine;
 namespace Simulation_OOP {
-    public class Belt : MonoBehaviour {
+    public class Belt : MonoBehaviour, ISimView {
         public BeltData target;
-        public Vector3[] path;
+        public List<Vector3> path;
         public MeshFilter mfilter;
-        public Transform[] targets;
+        public Mesh itemMesh;
+        public Material itemMat;
+        Vector3[] four = new Vector3[4];
+        List<Vector3> verts = new List<Vector3>();
+        List<int> indices = new List<int>();
+        int[] tmpIndices;
         private void Awake() {
 
-            path = new Vector3[16];
+            path = new List<Vector3>();
         }
         private void Start() {
 
         }
-        Vector3[] four = new Vector3[4];
-        public void setPath(Vector3[] positions, int positionsLength, float smoothness, Vector3 basePos, List<Vector3> verts, List<int> indices) {
+        public ISimData getTarget() {
+            return target;
+        }
+        private void Update() {
+            if (target.count == 0) return;
+            float[] positions = target.positions;
+            int i = 0;
+            float pos = positions[i];
+            Matrix4x4[] matrices = new Matrix4x4[target.count];
+            for (int j = 0; j < path.Count - 1; ++j) {
+                float thisDist = Vector3.Distance(path[j], path[j + 1]);
+                if(pos <= thisDist) {
+                    Vector3 thisPos = Vector3.Lerp(path[j], path[j + 1], pos / thisDist);
+                    matrices[i] = Matrix4x4.TRS(thisPos, Quaternion.identity, Vector3.one);
+                    thisDist -= pos;
+                    i++;
+                    if (i >= positions.Length) break;
+                    pos = positions[i] - thisDist;
+                }
+                else {
+                    pos -= thisDist;
+                }
+            }
+            Graphics.DrawMeshInstanced(itemMesh, 0, itemMat, matrices, target.count);
+        }
+        float getPathDistance() {
+            float sum = 0.0f;
+            for(int i = 0; i < path.Count - 1; ++i) {
+                sum += Vector3.Distance(path[i], path[i + 1]);
+            }
+            return sum;
+        }
+        void setPath(Vector3[] positions, int positionsLength, float smoothness, Vector3 basePos, List<Vector3> verts, List<int> indices) {
             int steps = 10;
             Vector3[] ctrlPos;
             
@@ -34,7 +70,8 @@ namespace Simulation_OOP {
                 four[3] = positions[j + 1] - basePos;
 
                 Vector3 lastPos = BezierStatic.evalBezier(four[0], four[1], four[2], four[3], 0);
-
+                if(j == 0)
+                    path.Add(lastPos);
                 for (int i = 1; i <= steps; i++) {
                     float t = (float)i / (float)steps;
                     Vector3 thisPos = BezierStatic.evalBezier(four[0], four[1], four[2], four[3], t);
@@ -52,7 +89,7 @@ namespace Simulation_OOP {
                         verts.Add(lastright);
                         vert_inc += 2;
                     }
-
+                    path.Add(thisPos);
                     verts.Add(left);
                     verts.Add(right);
 
@@ -76,9 +113,8 @@ namespace Simulation_OOP {
 
                 }
             }
-
         }
-        public static void setPathPoints(Vector3[] pts, int positionsLength, float smoothness, out Vector3[] controlPts) {
+        static void setPathPoints(Vector3[] pts, int positionsLength, float smoothness, out Vector3[] controlPts) {
 
             controlPts = new Vector3[(positionsLength - 1) * 2];
             Vector3 curPos = pts[0];
@@ -102,19 +138,20 @@ namespace Simulation_OOP {
             }
             controlPts[(positionsLength - 1) * 2 - 1] = pts[positionsLength - 1] - lastdiff * smoothness;
         }
-        List<Vector3> verts = new List<Vector3>();
-        List<int> indices = new List<int>();
-        int[] tmpIndices;
-        public void Update() {
-
-            for (int i = 0; i < targets.Length; ++i) {
-                path[i] = targets[i].position;
-            }
+        
+        public void refreshMesh(Vector3[] pathpoints) {
+            //for (int i = 0; i < pathpoints.Length; ++i) {
+            //    path[i] = pathpoints[i];
+            //}
+            path.Clear();
             mfilter.mesh.GetVertices(verts);
 
             mfilter.mesh.GetIndices(indices, 0);
-            setPath(path, targets.Length, 2f, path[0], verts, indices);
-            mfilter.mesh.SetVertices(verts);
+            setPath(pathpoints, pathpoints.Length, 2f, pathpoints[0], verts, indices);
+            transform.position = pathpoints[0];
+            mfilter.mesh.Clear(true);
+            mfilter.mesh.vertices = verts.ToArray();
+            
             if (tmpIndices == null || tmpIndices.Length != indices.Count) {
                 tmpIndices = new int[indices.Count];
             }
@@ -122,6 +159,7 @@ namespace Simulation_OOP {
                 tmpIndices[i] = indices[i];
             }
             mfilter.mesh.SetIndices(tmpIndices, MeshTopology.Triangles, 0);
+            target.tubeLength = getPathDistance();
         }
     }
 }
