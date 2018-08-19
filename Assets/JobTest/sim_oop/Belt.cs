@@ -8,6 +8,7 @@ namespace Simulation_OOP {
         public MeshFilter mfilter;
         public Mesh itemMesh;
         public Material itemMat;
+        public MeshCollider meshCol;
         Vector3[] four = new Vector3[4];
         List<Vector3> verts = new List<Vector3>();
         List<int> indices = new List<int>();
@@ -160,6 +161,7 @@ namespace Simulation_OOP {
             }
             mfilter.mesh.SetIndices(tmpIndices, MeshTopology.Triangles, 0);
             target.tubeLength = getPathDistance();
+            meshCol.sharedMesh = mfilter.mesh;
         }
     }
 }

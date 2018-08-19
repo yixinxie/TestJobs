@@ -69,12 +69,12 @@ public class CamControl : MonoBehaviour {
             if(buildPhase == 3) {
                 //Debug.Log("belt mode");
                 if (Input.GetMouseButtonDown(0)) {
-                    beltStart = hit.point;
+                    beltStart = pointedAt;
                     settingBelt = true;
                     Debug.Log("belt begin " + Input.mousePosition);
                 }
                 else if(Input.GetMouseButtonUp(0) && settingBelt) {
-                    Vector3 beltEnd = hit.point;
+                    Vector3 beltEnd = pointedAt;
                     SimManager.self.addBelt(beltStart, beltEnd);
                     settingBelt = false;
                     Debug.Log("belt end " + Input.mousePosition);

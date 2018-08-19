@@ -37,6 +37,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4739870909473600}
   - component: {fileID: 114175504268460918}
+  - component: {fileID: 64064271070337714}
   m_Layer: 0
   m_Name: Belt
   m_TagString: Untagged
@@ -113,6 +114,20 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1494129914853054}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!64 &64064271070337714
+MeshCollider:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1648674992910034}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Convex: 0
+  m_CookingOptions: 14
+  m_SkinWidth: 0.01
+  m_Mesh: {fileID: 0}
 --- !u!114 &114175504268460918
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -128,3 +143,4 @@ MonoBehaviour:
   mfilter: {fileID: 33387727861384964}
   itemMesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
   itemMat: {fileID: 2100000, guid: efaec5347b988e840ac471f4b3cd6ffb, type: 2}
+  meshCol: {fileID: 64064271070337714}
