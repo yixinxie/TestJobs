@@ -42,7 +42,7 @@ public class CamControl : MonoBehaviour {
                     int idx = UIControll.self.getBuildStructure();
                     switch (idx) {
                         case 0:
-                            buildResult = SimManager.self.addGenerator(pointedAt);
+                            buildResult = SimManager.self.addGenerator(pointedAt) != null;
                             break;
                         case 1:
                             SimManager.self.addInserter(pointedAt);

@@ -35,14 +35,15 @@ namespace Simulation_OOP {
             beltGO = new List<Belt>();
             inserterGO = new List<Inserter>();
         }
-        public bool addGenerator(Vector3 pos) {
+        
+        public ProducerData addGenerator(Vector3 pos) {
             RaycastHit hitInfo;
             if(Physics.Raycast(pos + Vector3.up, Vector3.down, out hitInfo, 2f) == false) {
-                return false;
+                return null;
             }
             ResourceNode rnode = hitInfo.collider.gameObject.GetComponent<ResourceNode>();
             if (rnode == null)
-                return false;
+                return null;
 
             ProducerData p = new ProducerData();
             p.itemId = 1;
@@ -56,7 +57,7 @@ namespace Simulation_OOP {
             comp.target = p;
             producerGO.Add(comp);
             comp.initialize(rnode);
-            return true;
+            return p;
         }
         public void addBelt (Vector3 fromPos, Vector3 toPos) {
             BeltData p = new BeltData();
@@ -72,17 +73,32 @@ namespace Simulation_OOP {
             temp[1] = toPos;
             comp.refreshMesh(temp);
         }
-        public void addInserter(Vector3 pos) {
-            InserterData p = new InserterData();
-            inserters.Add(p);
+        public void addStraightBelt(Vector3 fromPos, Vector3 toPos) {
+            BeltData p = new BeltData();
+            belts.Add(p);
+
+            GameObject go = GameObject.Instantiate(beltPrefab, (fromPos + toPos) / 2f, Quaternion.identity) as GameObject;
+            Belt comp = go.GetComponent<Belt>();
+
+            comp.target = p;
+            beltGO.Add(comp);
+            Vector3[] temp = new Vector3[2];
+            temp[0] = fromPos;
+            temp[1] = toPos;
+            comp.refreshMesh(temp);
+        }
+        public InserterData addInserter(Vector3 pos) {
+            InserterData ins = new InserterData();
+            inserters.Add(ins);
 
             GameObject go = GameObject.Instantiate(inserterPrefab, pos, Quaternion.identity) as GameObject;
             Inserter comp = go.GetComponent<Inserter>();
 
-            comp.target = p;
+            comp.target = ins;
             inserterGO.Add(comp);
 
-            surroundingCheck(pos, p, comp);
+            //surroundingCheck(pos, p, comp);
+            return ins;
         }
         void surroundingCheck(Vector3 pos, InserterData inserterData, Inserter inserter) {
             // inserter check
@@ -122,6 +138,16 @@ namespace Simulation_OOP {
                 }
             }
         }
+        public void addAssemblerArray(int x_max, int y_max, int z_max, Vector3 basePos) {
+            float spacing = 4f;
+            for (int z = 0; z < z_max; ++z) {
+                for (int y = 0; y < y_max; ++y) {
+                    for (int x = 0; x < x_max; ++x) {
+                        addAssembler(basePos + new Vector3(x, y, z) * spacing);
+                    }
+                }
+            }
+        }
         public void addAssembler(Vector3 pos) {
             AssemblerData p = new AssemblerData();
             assemblers.Add(p);
@@ -132,7 +158,7 @@ namespace Simulation_OOP {
             comp.target = p;
             assemblerGO.Add(comp);
         }
-        public void addStorage(Vector3 pos) {
+        public StorageData addStorage(Vector3 pos) {
             StorageData stor = new StorageData();
             storages.Add(stor);
 
@@ -141,8 +167,16 @@ namespace Simulation_OOP {
 
             comp.target = stor;
             storageGO.Add(comp);
+            return stor;
         }
         private void Start() {
+            ProducerData gen = addGenerator(new Vector3(1f, 0f, 13f));
+            InserterData ins = addInserter(new Vector3(3f, 0, 13f));
+            StorageData stor = addStorage(new Vector3(5f, 0, 13f));
+            ins.source = gen;
+            ins.target = stor;
+            ins.expectedItemId = 1;
+
             //ProducerData p = new ProducerData();
             //p.itemId = 1;
             //producers.Add(p);
@@ -155,6 +189,8 @@ namespace Simulation_OOP {
             //ins.source = p;
             //ins.target = stor;
             //ins.expectedItemId = 1;
+
+
 
             //for (int i = 0; i < belts.Count; ++i) {
             //    GameObject go = GameObject.Instantiate(beltPrefab) as GameObject;
