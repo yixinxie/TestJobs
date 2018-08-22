@@ -59,7 +59,7 @@ namespace Simulation_OOP {
             comp.initialize(rnode);
             return p;
         }
-        public void addBelt (Vector3 fromPos, Vector3 toPos) {
+        public BeltData addBelt (Vector3 fromPos, Vector3 toPos) {
             BeltData p = new BeltData();
             belts.Add(p);
 
@@ -72,6 +72,8 @@ namespace Simulation_OOP {
             temp[0] = fromPos;
             temp[1] = toPos;
             comp.refreshMesh(temp);
+
+            return p;
         }
         public void addStraightBelt(Vector3 fromPos, Vector3 toPos) {
             BeltData p = new BeltData();
@@ -173,9 +175,20 @@ namespace Simulation_OOP {
             ProducerData gen = addGenerator(new Vector3(1f, 0f, 13f));
             InserterData ins = addInserter(new Vector3(3f, 0, 13f));
             StorageData stor = addStorage(new Vector3(5f, 0, 13f));
+            BeltData belt = addBelt(new Vector3(5f, 0f, 13f),
+                new Vector3(5f, 0f, 13f));
             ins.source = gen;
-            ins.target = stor;
+            ins.target = belt;
             ins.expectedItemId = 1;
+            
+            ins.target = belt;
+            ins.targetPos = 0f;
+
+            InserterData ins2 = addInserter(new Vector3(3f, 0, 13f));
+            ins2.source = belt;
+            ins2.sourcePos = 1f;
+            ins2.target = stor;
+            
 
             //ProducerData p = new ProducerData();
             //p.itemId = 1;
