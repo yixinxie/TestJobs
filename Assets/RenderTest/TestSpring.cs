@@ -10,7 +10,10 @@ public class TestSpring : MonoBehaviour {
     public Transform[] targets;
     public Transform rootTrans;
     ClothPointData[] points;
-    
+
+    public float adjustSpeed = 10f;
+    public float dragCoeff = 0.5f;
+
     // Use this for initialization
     private void Awake() {
         points = new ClothPointData[targets.Length];
@@ -25,7 +28,7 @@ public class TestSpring : MonoBehaviour {
 
         }
 	}
-	
+    
 	// Update is called once per frame
 	void Update () {
         float dt = Time.deltaTime;
@@ -39,9 +42,15 @@ public class TestSpring : MonoBehaviour {
             Vector3 desiredPos = parentPos + pd.length * diff;
             Vector3 moveDir = desiredPos - pd.position;
             float moveDirMag = moveDir.magnitude;
-            moveDir /= moveDirMag;
-            pd.velocity += moveDir * dt * moveDirMag * 0.1f;
-            pd.velocity *= (1f - 0.2f * dt);
+            if (moveDirMag != 0)
+                moveDir /= moveDirMag;
+            pd.velocity += moveDir * dt * moveDirMag * adjustSpeed;
+
+            // gravity
+            pd.velocity += Vector3.down * dt;
+
+            // drag
+            pd.velocity *= (1f - dragCoeff * dt);
             pd.position += pd.velocity * dt;
             points[i] = pd;
             //diff * 
@@ -54,7 +63,7 @@ public class TestSpring : MonoBehaviour {
         for (int i = 0; i < points.Length; ++i) {
             Debug.DrawLine(parentPos, points[i].position, clrs[i % 3]);
             parentPos = points[i].position;
-            //targets[i].position = points[i].position;
+            targets[i].localPosition = points[i].position;
         }
     }
 }
