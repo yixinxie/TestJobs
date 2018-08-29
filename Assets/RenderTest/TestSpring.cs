@@ -5,9 +5,12 @@ public struct ClothPointData {
     public Vector3 position;
     public Vector3 velocity;
     public float length;
+    //public Vector3 constraintDirection;
+    //public Vector3 occDirection;
 }
 public class TestSpring : MonoBehaviour {
     public Transform[] targets;
+    public Transform[,] targets2;
     public Transform rootTrans;
     ClothPointData[] points;
 
@@ -29,34 +32,54 @@ public class TestSpring : MonoBehaviour {
         }
 	}
     
-	// Update is called once per frame
-	void Update () {
+    public float _stretchLength;
+    void Update() {
+        float maxSpring = 0.5f;
+        float minSpring = 0.1f;
+        Vector3 gravity = Physics.gravity;
+        float stretchLength = _stretchLength;
         float dt = Time.deltaTime;
         Vector3 parentPos = rootTrans.position;
-        for (int i = 0;i < points.Length; ++i) {
+        //float stiffness = 1f;
+        for (int i = 0; i < points.Length; ++i) {
             ClothPointData pd = points[i];
+            Vector3 acceleration = gravity;
+
+            float maxDist = pd.length * 1.2f;
+            float minDist = pd.length * 0.8f;
             float dist = Vector3.Distance(pd.position, parentPos);
             //pd.length
             Vector3 diff = pd.position - parentPos;
-            diff.Normalize();
-            Vector3 desiredPos = parentPos + pd.length * diff;
-            Vector3 moveDir = desiredPos - pd.position;
-            float moveDirMag = moveDir.magnitude;
-            if (moveDirMag != 0)
-                moveDir /= moveDirMag;
-            pd.velocity += moveDir * dt * moveDirMag * adjustSpeed;
+            //diff.Normalize();
+            diff /= dist;
+            if (dist > pd.length) {
+                float exceed = Mathf.Clamp01(Mathf.Abs(dist - maxDist) / stretchLength);
+                pd.position = parentPos + diff * Mathf.Lerp(dist, maxDist, exceed * exceed);
 
-            // gravity
-            pd.velocity += Vector3.down * dt;
+                float springMag = maxSpring * exceed * 9.8f;
+                Vector3 force = -diff * springMag;
+                acceleration += force;
 
-            // drag
-            pd.velocity *= (1f - dragCoeff * dt);
+            }
+            else {
+                float exceed = Mathf.Clamp01(Mathf.Abs(dist - minDist) / stretchLength);
+                pd.position = parentPos + diff * Mathf.Lerp(dist, minDist, exceed * exceed);
+
+                float springMag = minSpring * exceed * 9.8f;
+                Vector3 force = -diff * springMag;
+                acceleration += force;
+            }
+
+            acceleration += -pd.velocity * dragCoeff;
+
+            pd.velocity += acceleration * dt;
             pd.position += pd.velocity * dt;
+
             points[i] = pd;
-            //diff * 
             parentPos = pd.position;
         }
-	}
+    }
+    
     private void LateUpdate() {
         Vector3 parentPos = rootTrans.position;
         Color[] clrs = new Color[3] { Color.green, Color.red, Color.blue};
