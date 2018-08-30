@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 public struct ClothPointData {
     public Vector3 position;
@@ -10,13 +11,11 @@ public struct ClothPointData {
 }
 public class TestSpring : MonoBehaviour {
     public Transform[] targets;
-    public Transform[,] targets2;
     public Transform rootTrans;
     ClothPointData[] points;
 
-    public float adjustSpeed = 10f;
     public float dragCoeff = 0.5f;
-
+    public float _stretchLength;
     // Use this for initialization
     private void Awake() {
         points = new ClothPointData[targets.Length];
@@ -32,14 +31,17 @@ public class TestSpring : MonoBehaviour {
         }
 	}
     
-    public float _stretchLength;
+    
     void Update() {
+
+        //Thread thr = new Thread();
         float maxSpring = 0.5f;
         float minSpring = 0.1f;
         Vector3 gravity = Physics.gravity;
         float stretchLength = _stretchLength;
         float dt = Time.deltaTime;
         Vector3 parentPos = rootTrans.position;
+        //Vector3 parentPos = Vector3.zero;
         //float stiffness = 1f;
         for (int i = 0; i < points.Length; ++i) {
             ClothPointData pd = points[i];
@@ -48,7 +50,6 @@ public class TestSpring : MonoBehaviour {
             float maxDist = pd.length * 1.2f;
             float minDist = pd.length * 0.8f;
             float dist = Vector3.Distance(pd.position, parentPos);
-            //pd.length
             Vector3 diff = pd.position - parentPos;
             //diff.Normalize();
             diff /= dist;
@@ -81,6 +82,9 @@ public class TestSpring : MonoBehaviour {
     }
     
     private void LateUpdate() {
+        //Vector3 parentPos = Vector3.zero;
+        //Vector3 basePos = rootTrans.position;
+        //Vector3 parentPos = Vector3.zero;
         Vector3 parentPos = rootTrans.position;
         Color[] clrs = new Color[3] { Color.green, Color.red, Color.blue};
         for (int i = 0; i < points.Length; ++i) {
