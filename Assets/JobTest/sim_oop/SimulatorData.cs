@@ -11,7 +11,7 @@ namespace Simulation_OOP {
         bool attemptToRemove(ushort itemId, float atPos);
     }
     public class BeltData : ISimData {
-        public ushort[] itemIds;
+        ushort[] itemIds;
         public float[] positions;
 
         public int count;
@@ -24,11 +24,14 @@ namespace Simulation_OOP {
             itemIds = new ushort[Length];
             count = 0;
             tubeLength = 10f;
+            speed = 1f;
+            itemHalfWidth = 0.5f;
         }
 
         short canInsert(float pos) {
             short i = 0;
             if (count == 0) return 0;
+            if (count == positions.Length) return -1;
             if (count > 0 && pos < positions[i] - 2 * itemHalfWidth) {
                 return i;
             }
@@ -50,11 +53,15 @@ namespace Simulation_OOP {
 
             int insertAt = canInsert(pos);
             if (insertAt >= 0) {
-                for (int i = 0; i < count; ++i) {
+
+                for (int i = insertAt; i < count; ++i) {
                     positions[i + 1] = positions[i];
                     itemIds[i + 1] = itemIds[i];
-                    ret = true;
+                    
                 }
+                positions[insertAt] = 0f;
+                itemIds[insertAt] = _itemId;
+                ret = true;
                 count++;
             }
             return ret;
@@ -64,6 +71,7 @@ namespace Simulation_OOP {
             const float PickupDist = 0.2f;
             for (short i = 0; i < count; ++i) {
                 if (Mathf.Abs(pos - positions[i]) < PickupDist && itemIds[i] == itemId) {
+                    Debug.Log("got " + i);
                     return i;
                 }
             }
@@ -98,6 +106,9 @@ namespace Simulation_OOP {
             }
         }
     }
+    // 1 byte item id
+    // 2 short  distance
+    // 
     public class InserterData : ISimData {
         public ushort expectedItemId;
         public float sourcePos;
@@ -135,10 +146,12 @@ namespace Simulation_OOP {
         }
     }
     public class ProducerData : ISimData {
-        public ushort itemId;
-        public int count;
-        public float cycleDuration;
         public float timeLeft;
+        public ushort itemId;
+        public int count; // produced
+        public int remaining;
+        public float cycleDuration;
+        
         public ProducerData() {
             cycleDuration = 2f;
         }
@@ -157,6 +170,7 @@ namespace Simulation_OOP {
             timeLeft -= dt;
             if (timeLeft <= 0.0f) {
                 timeLeft += cycleDuration;
+                remaining--;
                 count++;
             }
         }
