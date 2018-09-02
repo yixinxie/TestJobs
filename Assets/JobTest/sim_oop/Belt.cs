@@ -9,6 +9,10 @@ namespace Simulation_OOP {
         public Mesh itemMesh;
         public Material itemMat;
         public MeshCollider meshCol;
+        Matrix4x4[] matrices;
+        // debug
+        public float[] debugPos;
+        public int count;
         Vector3[] four = new Vector3[4];
         List<Vector3> verts = new List<Vector3>();
         List<int> indices = new List<int>();
@@ -24,26 +28,37 @@ namespace Simulation_OOP {
             return target;
         }
         private void Update() {
-            if (target.count == 0) return;
+            debugPos = target.positions;
+            count = target.count;
+            Vector3 selfPos = transform.position;
+            if (count == 0) return;
+
+            if(matrices == null || matrices.Length < count) {
+                matrices = new Matrix4x4[count * 2];
+            }
+            
             float[] positions = target.positions;
+            
             int i = 0;
             float pos = positions[i];
-            Matrix4x4[] matrices = new Matrix4x4[target.count];
+                
             for (int j = 0; j < path.Count - 1; ++j) {
+                
                 float thisDist = Vector3.Distance(path[j], path[j + 1]);
-                if(pos <= thisDist) {
-                    Vector3 thisPos = Vector3.Lerp(path[j], path[j + 1], pos / thisDist);
+                if (pos <= thisDist) {
+                    Vector3 thisPos = Vector3.Lerp(path[j], path[j + 1], pos / thisDist) + selfPos;
+                    //Debug.DrawLine(thisPos, thisPos + Vector3.up * 3f, Color.red);
                     matrices[i] = Matrix4x4.TRS(thisPos, Quaternion.identity, Vector3.one);
                     thisDist -= pos;
                     i++;
-                    if (i >= positions.Length) break;
-                    pos = positions[i] - thisDist;
+                    if (i >= count) break;
+                    pos -= thisDist;
                 }
                 else {
                     pos -= thisDist;
                 }
             }
-            Graphics.DrawMeshInstanced(itemMesh, 0, itemMat, matrices, target.count);
+            Graphics.DrawMeshInstanced(itemMesh, 0, itemMat, matrices, count);
         }
         float getPathDistance() {
             float sum = 0.0f;
@@ -161,7 +176,7 @@ namespace Simulation_OOP {
             }
             mfilter.mesh.SetIndices(tmpIndices, MeshTopology.Triangles, 0);
             target.tubeLength = getPathDistance();
-            meshCol.sharedMesh = mfilter.mesh;
+            //meshCol.me = mfilter.mesh;
         }
     }
 }

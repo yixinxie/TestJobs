@@ -175,20 +175,20 @@ namespace Simulation_OOP {
             ProducerData gen = addGenerator(new Vector3(1f, 0f, 13f));
             InserterData ins = addInserter(new Vector3(3f, 0, 13f));
             StorageData stor = addStorage(new Vector3(5f, 0, 13f));
-            BeltData belt = addBelt(new Vector3(5f, 0f, 13f),
+            BeltData belt = addBelt(new Vector3(1f, 0f, 13f),
                 new Vector3(5f, 0f, 13f));
             ins.source = gen;
             ins.target = belt;
+            ins.targetPos = 0f;
             ins.expectedItemId = 1;
             
-            ins.target = belt;
-            ins.targetPos = 0f;
 
             InserterData ins2 = addInserter(new Vector3(3f, 0, 13f));
             ins2.source = belt;
-            ins2.sourcePos = 1f;
+            ins2.sourcePos = 4f;
             ins2.target = stor;
-            
+            ins2.expectedItemId = 1;
+
 
             //ProducerData p = new ProducerData();
             //p.itemId = 1;
