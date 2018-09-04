@@ -7,15 +7,17 @@ namespace Simulation_OOP {
         public ProducerData target;
 
         public float timeLeft;
+        public int current;
         private void Awake() {
             
         }
         public void initialize(ResourceNode node) {
             target.itemId = node.itemType;
-            target.count = node.remaining;
+            target.remaining = node.remaining;
         }
         private void Update() {
             timeLeft = target.timeLeft;
+            current = target.count;
         }
         public ISimData getTarget() {
             return target;

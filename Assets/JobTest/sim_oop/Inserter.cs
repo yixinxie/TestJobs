@@ -6,9 +6,12 @@ namespace Simulation_OOP {
         public InserterData target;
         public string head;
         public string tail;
+        // debug
         public float phaseTime;
+        public int phase;
         private void Update() {
             phaseTime = target.timeLeft;
+            phase = target.phase;
         }
         public ISimData getTarget() {
             return target;

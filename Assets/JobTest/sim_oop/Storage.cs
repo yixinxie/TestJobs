@@ -4,10 +4,10 @@ using UnityEngine;
 namespace Simulation_OOP {
     public class Storage : MonoBehaviour, ISimView {
         public StorageData target;
-
-        public int count;
+        // debug
+        public short[] counts;
         private void Update() {
-            count = target.stacks[1];
+            counts = target.stacks;
         }
         public ISimData getTarget() {
             return target;
