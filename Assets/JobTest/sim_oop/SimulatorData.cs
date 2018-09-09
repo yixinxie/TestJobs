@@ -50,13 +50,12 @@ namespace Simulation_OOP {
             bool ret = false;
             if (count > Length) return ret;
 
-
             int insertAt = canInsert(pos);
             if (insertAt >= 0) {
 
-                for (int i = insertAt; i < count; ++i) {
-                    positions[i + 1] = positions[i];
-                    itemIds[i + 1] = itemIds[i];
+                for (int i = count; i > insertAt; --i) {
+                    positions[i] = positions[i - 1];
+                    itemIds[i] = itemIds[i - 1];
                     
                 }
                 positions[insertAt] = 0f;
@@ -81,11 +80,11 @@ namespace Simulation_OOP {
             bool ret = false;
             short atIdx = queryItemAtPos(atPos, itemId);
             if (atIdx >= 0) {
-                for (int i = atIdx; i < count; ++i) {
-                    positions[i + 1] = positions[i];
-                    itemIds[i + 1] = itemIds[i];
-                }
                 count--;
+                for (int i = atIdx; i < count; ++i) {
+                    positions[i] = positions[i + 1];
+                    itemIds[i] = itemIds[i + 1];
+                }
                 ret = true;
             }
             return ret;

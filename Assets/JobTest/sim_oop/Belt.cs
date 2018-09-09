@@ -41,23 +41,54 @@ namespace Simulation_OOP {
             
             int i = 0;
             float pos = positions[i];
-                
-            for (int j = 0; j < path.Count - 1; ++j) {
-                
-                float thisDist = Vector3.Distance(path[j], path[j + 1]);
-                if (pos <= thisDist) {
-                    Vector3 thisPos = Vector3.Lerp(path[j], path[j + 1], pos / thisDist) + selfPos;
-                    //Debug.DrawLine(thisPos, thisPos + Vector3.up * 3f, Color.red);
-                    matrices[i] = Matrix4x4.TRS(thisPos, Quaternion.identity, Vector3.one);
-                    thisDist -= pos;
-                    i++;
-                    if (i >= count) break;
-                    pos -= thisDist;
-                }
-                else {
-                    pos -= thisDist;
+            //Vector3 from = path[0];
+            //Vector3 to = path[path.Count - 1];
+            //for (int j = 0; j < count; ++j) {
+            //    Vector3 thisPos = Vector3.Lerp(from, to, positions[j]/ target.tubeLength) + selfPos;
+            //    matrices[j] = Matrix4x4.TRS(thisPos, Quaternion.identity, Vector3.one);
+            //}
+            int j = 0;
+            float left = 0f;
+            float thisDist = Vector3.Distance(path[0], path[1]);
+            for (; i < count; ++i) {
+                pos = positions[i] + left;
+                for(; j < path.Count - 1;) {
+                    //thisDist = Vector3.Distance(path[j], path[j + 1]);
+                    if (pos <= thisDist) {
+                        Vector3 thisPos = Vector3.Lerp(path[j], path[j + 1], pos / thisDist) + selfPos;
+                        //Debug.DrawLine(path[j] + Vector3.up * 3f, path[j + 1] + Vector3.up * 3f, Color.red);
+                        //Debug.DrawLine(thisPos, thisPos + Vector3.up * 3f, Color.red);
+                        matrices[i] = Matrix4x4.TRS(thisPos, Quaternion.identity, Vector3.one);
+                        thisDist -= pos;
+                        //left = 
+                        break;
+
+                    }
+                    else {
+                        pos -= thisDist;
+                        j++;
+                        thisDist = Vector3.Distance(path[j], path[j + 1]);
+                    }
                 }
             }
+                
+            //for (int j = 0; j < path.Count - 1; ++j) {
+            //    float thisDist = Vector3.Distance(path[j], path[j + 1]);
+            //    if (pos <= thisDist) {
+            //        Vector3 thisPos = Vector3.Lerp(path[j], path[j + 1], pos / thisDist) + selfPos;
+            //        Debug.DrawLine(path[j] + Vector3.up * 3f, path[j + 1] + Vector3.up * 3f, Color.red);
+            //        //Debug.DrawLine(thisPos, thisPos + Vector3.up * 3f, Color.red);
+            //        matrices[i] = Matrix4x4.TRS(thisPos, Quaternion.identity, Vector3.one);
+            //        thisDist -= pos;
+            //        i++;
+            //        if (i >= count) break;
+            //        pos = positions[i];
+            //        pos -= thisDist;
+            //    }
+            //    else {
+            //        pos -= thisDist;
+            //    }
+            //}
             Graphics.DrawMeshInstanced(itemMesh, 0, itemMat, matrices, count);
         }
         float getPathDistance() {
