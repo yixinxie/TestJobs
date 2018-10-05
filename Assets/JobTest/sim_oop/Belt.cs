@@ -39,8 +39,6 @@ namespace Simulation_OOP {
             
             float[] positions = target.positions;
             
-            int i = 0;
-            float pos = positions[i];
             //Vector3 from = path[0];
             //Vector3 to = path[path.Count - 1];
             //for (int j = 0; j < count; ++j) {
@@ -48,26 +46,22 @@ namespace Simulation_OOP {
             //    matrices[j] = Matrix4x4.TRS(thisPos, Quaternion.identity, Vector3.one);
             //}
             int j = 0;
-            float left = 0f;
-            float thisDist = Vector3.Distance(path[0], path[1]);
-            for (; i < count; ++i) {
-                pos = positions[i] + left;
-                for(; j < path.Count - 1;) {
-                    //thisDist = Vector3.Distance(path[j], path[j + 1]);
+            float accum = 0f;
+            for (int i = 0; i < count; ++i) {
+                float pos = positions[i] - accum;
+                for(; j < path.Count - 1; j++) {
+                    float thisDist = Vector3.Distance(path[j], path[j + 1]);
                     if (pos <= thisDist) {
                         Vector3 thisPos = Vector3.Lerp(path[j], path[j + 1], pos / thisDist) + selfPos;
                         //Debug.DrawLine(path[j] + Vector3.up * 3f, path[j + 1] + Vector3.up * 3f, Color.red);
                         //Debug.DrawLine(thisPos, thisPos + Vector3.up * 3f, Color.red);
                         matrices[i] = Matrix4x4.TRS(thisPos, Quaternion.identity, Vector3.one);
-                        thisDist -= pos;
-                        //left = 
                         break;
 
                     }
                     else {
+                        accum += thisDist;
                         pos -= thisDist;
-                        j++;
-                        thisDist = Vector3.Distance(path[j], path[j + 1]);
                     }
                 }
             }
