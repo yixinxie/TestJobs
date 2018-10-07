@@ -189,56 +189,6 @@ namespace Simulation_OOP {
             ins2.target = stor;
             ins2.expectedItemId = 1;
 
-
-            //ProducerData p = new ProducerData();
-            //p.itemId = 1;
-            //producers.Add(p);
-
-            //StorageData stor = new StorageData();
-            //storages.Add(stor);
-
-            //InserterData ins = new InserterData();
-            //inserters.Add(ins);
-            //ins.source = p;
-            //ins.target = stor;
-            //ins.expectedItemId = 1;
-
-
-
-            //for (int i = 0; i < belts.Count; ++i) {
-            //    GameObject go = GameObject.Instantiate(beltPrefab) as GameObject;
-            //    Belt comp = go.GetComponent<Belt>();
-            //    comp.target = belts[i];
-            //    beltGO.Add(comp);
-            //}
-
-            //for (int i = 0; i < storages.Count; ++i) {
-            //    GameObject go = GameObject.Instantiate(storagePrefab) as GameObject;
-            //    Storage comp = go.GetComponent<Storage>();
-            //    comp.target = storages[i];
-            //    storageGO.Add(comp);
-            //}
-
-            //for (int i = 0; i < assemblers.Count; ++i) {
-            //    GameObject go = GameObject.Instantiate(assemblerPrefab) as GameObject;
-            //    Assembler comp = go.GetComponent<Assembler>();
-            //    comp.target = assemblers[i];
-            //    assemblerGO.Add(comp);
-            //}
-
-            //for (int i = 0; i < producers.Count; ++i) {
-            //    GameObject go = GameObject.Instantiate(producerPrefab) as GameObject;
-            //    Producer comp = go.GetComponent<Producer>();
-            //    comp.target = producers[i];
-            //    producerGO.Add(comp);
-            //}
-
-            //for (int i = 0; i < inserters.Count; ++i) {
-            //    GameObject go = GameObject.Instantiate(inserterPrefab) as GameObject;
-            //    Inserter comp = go.GetComponent<Inserter>();
-            //    comp.target = inserters[i];
-            //    inserterGO.Add(comp);
-            //}
         }
         void FixedUpdate() {
             float dt = Time.fixedDeltaTime;
@@ -255,9 +205,6 @@ namespace Simulation_OOP {
             for (int i = 0; i < inserters.Count; ++i) {
                 inserters[i].update(dt);
             }
-        }
-        private void LateUpdate() {
-            
         }
     }
 }

@@ -92,11 +92,16 @@ namespace Simulation_OOP {
             }
             return sum;
         }
-        void setPath(Vector3[] positions, int positionsLength, float smoothness, Vector3 basePos, List<Vector3> verts, List<int> indices) {
+
+        void setPathGrid(Vector3[] positions, int positionsLength, float smoothness, Vector3 basePos, List<Vector3> verts, List<int> indices) {
+
+        }
+
+        void setPathBezier(Vector3[] positions, int positionsLength, float smoothness, Vector3 basePos, List<Vector3> verts, List<int> indices) {
             int steps = 10;
             Vector3[] ctrlPos;
             
-            setPathPoints(positions, positionsLength, smoothness, out ctrlPos);
+            genBezierControlPoints(positions, positionsLength, smoothness, out ctrlPos);
             Vector3 lastleft = Vector3.zero;
             Vector3 lastright = Vector3.zero;
             int vert_inc = 0;
@@ -155,7 +160,7 @@ namespace Simulation_OOP {
                 }
             }
         }
-        static void setPathPoints(Vector3[] pts, int positionsLength, float smoothness, out Vector3[] controlPts) {
+        static void genBezierControlPoints(Vector3[] pts, int positionsLength, float smoothness, out Vector3[] controlPts) {
 
             controlPts = new Vector3[(positionsLength - 1) * 2];
             Vector3 curPos = pts[0];
@@ -188,7 +193,7 @@ namespace Simulation_OOP {
             mfilter.mesh.GetVertices(verts);
 
             mfilter.mesh.GetIndices(indices, 0);
-            setPath(pathpoints, pathpoints.Length, 2f, pathpoints[0], verts, indices);
+            setPathBezier(pathpoints, pathpoints.Length, 2f, pathpoints[0], verts, indices);
             transform.position = pathpoints[0];
             mfilter.mesh.Clear(true);
             mfilter.mesh.vertices = verts.ToArray();
