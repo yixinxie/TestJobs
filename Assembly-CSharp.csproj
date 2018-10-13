@@ -105,6 +105,7 @@
     <Compile Include="Assets\RenderTest\ChangeMat.cs" />
     <Compile Include="Assets\RenderTest\MeshStats.cs" />
     <Compile Include="Assets\RenderTest\RotTest.cs" />
+    <Compile Include="Assets\RenderTest\SpatialHash.cs" />
     <Compile Include="Assets\RenderTest\TestSpring.cs" />
     <Reference Include="UnityEditor.StandardEvents">
       <HintPath>D:/TestJobs/TestJobs/Library/ScriptAssemblies/UnityEditor.StandardEvents.dll</HintPath>

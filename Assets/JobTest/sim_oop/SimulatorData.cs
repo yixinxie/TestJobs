@@ -70,7 +70,7 @@ namespace Simulation_OOP {
             const float PickupDist = 0.2f;
             for (short i = 0; i < count; ++i) {
                 if (Mathf.Abs(pos - positions[i]) < PickupDist && itemIds[i] == itemId) {
-                    Debug.Log("got " + i);
+                    //Debug.Log("got " + i);
                     return i;
                 }
             }
@@ -114,7 +114,7 @@ namespace Simulation_OOP {
         public float targetPos;
         public ISimData source, target;
         public float timeLeft;
-        public byte phase; // 0: empty, 1: moving stuff.
+        public byte phase; // 0: moving back to source, 1: moving towards target.
         public const float cycleDuration = 0.5f;
         public void update(float dt) {
             timeLeft -= dt;
@@ -201,6 +201,7 @@ namespace Simulation_OOP {
         public ushort productItemCount; // frequently changes
         public float cycleDuration;
         public float timeLeft;  // frequently changes
+        public int totalProduced;
         public AssemblerData(){
             req_itemIds = new ushort[3];
             req_Count = new ushort[3];
@@ -208,25 +209,29 @@ namespace Simulation_OOP {
         }
 
         public bool attemptToInsert(ushort _itemId, float pos) {
-            bool ret = false;
             for(int i = 0; i < req_itemIds.Length; ++i) {
-                if(req_itemIds[i] == _itemId && currentCount[i] < req_Count[i]) {
+                if(req_itemIds[i] == _itemId) {
                     currentCount[i]++;
-                    ret = true;
                     break;
                 }
             }
-            checkForStart();
-            return ret;
+            return checkForStart();
         }
         bool checkForStart() {
+            if(timeLeft > 0f) {
+                return false;
+            }
             bool allMet = true;
             for (int i = 0; i < req_itemIds.Length; ++i) {
-                if (currentCount[i] == req_Count[i]) {
+                if (currentCount[i] < req_Count[i] && req_Count[i] > 0) {
                     allMet = false;
+                    break;
                 }
             }
-            if (allMet && timeLeft == 0f) {
+            if (allMet) {
+                for (int i = 0; i < req_itemIds.Length; ++i) {
+                    currentCount[i] -= req_Count[i];
+                }
                 timeLeft = cycleDuration;
             }
             return allMet;
@@ -240,11 +245,14 @@ namespace Simulation_OOP {
             return false;
         }
         public void update(float dt) {
+            if (timeLeft <= 0f) return;
             timeLeft -= dt;
             if (timeLeft <= 0.0f) {
                 productItemCount++;
+                totalProduced++;
                 checkForStart();
                 
+
             }
         }
     }

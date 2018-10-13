@@ -3645,6 +3645,7 @@ MonoBehaviour:
   beltPrefab: {fileID: 1648674992910034, guid: 95c5eef0d9e355c42b6f2dbd753af307, type: 2}
   inserterPrefab: {fileID: 1550423774031376, guid: d927d8b92013542479c324fc01646939,
     type: 2}
+  line_count: 1
 --- !u!4 &1430167529
 Transform:
   m_ObjectHideFlags: 0

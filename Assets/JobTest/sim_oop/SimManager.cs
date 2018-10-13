@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Profiling;
+
 namespace Simulation_OOP {
     public class SimManager : MonoBehaviour {
         public static SimManager self;
@@ -56,7 +58,21 @@ namespace Simulation_OOP {
             
             comp.target = p;
             producerGO.Add(comp);
-            comp.initialize(rnode);
+            comp.initialize(rnode.itemType, rnode.remaining);
+            return p;
+        }
+        public ProducerData addGeneratorCheat(Vector3 pos, ushort itemType, int remaining) {
+
+            ProducerData p = new ProducerData();
+            p.itemId = 1;
+            producers.Add(p);
+
+            GameObject go = GameObject.Instantiate(producerPrefab, pos, Quaternion.identity) as GameObject;
+            Producer comp = go.GetComponent<Producer>();
+
+            comp.target = p;
+            producerGO.Add(comp);
+            comp.initialize(itemType, remaining);
             return p;
         }
         public BeltData addBelt (Vector3 fromPos, Vector3 toPos) {
@@ -150,7 +166,7 @@ namespace Simulation_OOP {
                 }
             }
         }
-        public void addAssembler(Vector3 pos) {
+        public AssemblerData addAssembler(Vector3 pos) {
             AssemblerData p = new AssemblerData();
             assemblers.Add(p);
 
@@ -159,6 +175,7 @@ namespace Simulation_OOP {
 
             comp.target = p;
             assemblerGO.Add(comp);
+            return p;
         }
         public StorageData addStorage(Vector3 pos) {
             StorageData stor = new StorageData();
@@ -171,40 +188,80 @@ namespace Simulation_OOP {
             storageGO.Add(comp);
             return stor;
         }
-        private void Start() {
-            ProducerData gen = addGenerator(new Vector3(1f, 0f, 13f));
-            InserterData ins = addInserter(new Vector3(3f, 0, 13f));
-            StorageData stor = addStorage(new Vector3(5f, 0, 13f));
-            BeltData belt = addBelt(new Vector3(1f, 0f, 13f),
-                new Vector3(5f, 0f, 13f));
-            ins.source = gen;
-            ins.target = belt;
-            ins.targetPos = 0f;
-            ins.expectedItemId = 1;
-            
+        public int line_count = 16;
+        private void Start_parallele() {
+            for(int i = 0; i < line_count; ++i) {
+                ProducerData gen = addGeneratorCheat(new Vector3(0f, 0f, i * 2f), 1, 9999);
+                BeltData belt = addBelt(new Vector3(4f, 0f, i * 2f), new Vector3(12f, 0f, i * 2f));
+                StorageData stor = addStorage(new Vector3(14f, 0, i * 2f));
+                InserterData ins = addInserter(new Vector3(2f, 0f, i * 2f));
+                ins.source = gen;
+                ins.target = belt;
+                ins.targetPos = 0f;
+                ins.expectedItemId = 1;
 
-            InserterData ins2 = addInserter(new Vector3(3f, 0, 13f));
-            ins2.source = belt;
-            ins2.sourcePos = 4f;
-            ins2.target = stor;
-            ins2.expectedItemId = 1;
-
+                InserterData ins2 = addInserter(new Vector3(13f, 0, i * 2f));
+                ins2.source = belt;
+                ins2.sourcePos = 8f;
+                ins2.target = stor;
+                ins2.expectedItemId = 1;
+            }
         }
-        void FixedUpdate() {
-            float dt = Time.fixedDeltaTime;
+        private void Start() {
+            for (int i = 0; i < line_count; ++i) {
+                ProducerData gen = addGeneratorCheat(new Vector3(0f, 0f, i * 2f), 1, 9999);
+                BeltData belt = addBelt(new Vector3(4f, 0f, i * 2f), new Vector3(12f, 0f, i * 2f));
+                AssemblerData assem = addAssembler(new Vector3(16f, 0, i * 2f));
+                assem.req_itemIds[0] = 1;
+                assem.req_Count[0] = 2;
+                assem.productItemId = 2;
+                assem.productItemCount = 1;
+                assem.cycleDuration = 2f;
+                StorageData stor = addStorage(new Vector3(20f, 0, i * 2f));
+
+                InserterData ins = addInserter(new Vector3(2f, 0f, i * 2f));
+                ins.source = gen;
+                ins.target = belt;
+                ins.targetPos = 0f;
+                ins.expectedItemId = 1;
+
+                InserterData ins2 = addInserter(new Vector3(14f, 0, i * 2f));
+                ins2.source = belt;
+                ins2.sourcePos = 8f;
+                ins2.target = assem;
+                ins2.expectedItemId = 1;
+
+
+                InserterData ins3 = addInserter(new Vector3(18f, 0, i * 2f));
+                ins3.source = assem;
+                ins3.target = stor;
+                ins3.expectedItemId = 2;
+
+
+            }
+        }
+        void Update() {
+            float dt = Time.deltaTime;
+            Profiler.BeginSample("producers");
             for (int i = 0; i < producers.Count; ++i) {
                 producers[i].update(dt);
             }
+            Profiler.EndSample();
+            Profiler.BeginSample("assemblers");
             for (int i = 0; i < assemblers.Count; ++i) {
                 assemblers[i].update(dt);
             }
+            Profiler.EndSample();
+            Profiler.BeginSample("belts");
             for (int i = 0; i < belts.Count; ++i) {
                 belts[i].update(dt);
             }
-
+            Profiler.EndSample();
+            Profiler.BeginSample("inserters");
             for (int i = 0; i < inserters.Count; ++i) {
                 inserters[i].update(dt);
             }
+            Profiler.EndSample();
         }
     }
 }
