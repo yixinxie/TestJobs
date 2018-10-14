@@ -3618,6 +3618,7 @@ GameObject:
   - component: {fileID: 1430167529}
   - component: {fileID: 1430167528}
   - component: {fileID: 1430167530}
+  - component: {fileID: 1430167531}
   m_Layer: 0
   m_Name: Static
   m_TagString: Untagged
@@ -3645,7 +3646,7 @@ MonoBehaviour:
   beltPrefab: {fileID: 1648674992910034, guid: 95c5eef0d9e355c42b6f2dbd753af307, type: 2}
   inserterPrefab: {fileID: 1550423774031376, guid: d927d8b92013542479c324fc01646939,
     type: 2}
-  line_count: 1
+  line_count: 4096
 --- !u!4 &1430167529
 Transform:
   m_ObjectHideFlags: 0
@@ -3675,6 +3676,17 @@ MonoBehaviour:
   structureGhost: {fileID: 1711366086}
   beltButton: {fileID: 444810915}
   beltExitButton: {fileID: 271712640}
+--- !u!114 &1430167531
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1430167527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 072967fa96c1d2e428e7b33ccea09e20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1437806465
 GameObject:
   m_ObjectHideFlags: 0
