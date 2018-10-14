@@ -47,7 +47,7 @@
         public float timeLeft;
         public byte phase; // 0: moving back to source, 1: moving towards target.
         public const float cycleDuration = 0.5f;
-        public void init() {
+        public void wakeup() {
             if (source.attemptToRemove(expectedItemId, sourcePos)) {
                 phase = 1;
                 timeLeft = cycleDuration;
