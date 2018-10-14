@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Profiling;
 
 namespace Simulation_OOP {
-    public class SimManager : MonoBehaviour {
+    public class SimManager : MonoBehaviour, IUpdate {
         public static SimManager self;
         public Object producerPrefab;
         public Object assemblerPrefab;
@@ -23,7 +23,7 @@ namespace Simulation_OOP {
         List<Belt> beltGO;
         List<Inserter> inserterGO;
 
-        void Awake() {
+        public SimManager() {
             self = this;
             producers = new List<ProducerData>();
             assemblers = new List<AssemblerData>();
@@ -208,12 +208,14 @@ namespace Simulation_OOP {
             }
         }
         private void Start() {
+            SystemUpdate.self.RegisterPerFrameUpdate(this);
             for (int i = 0; i < line_count; ++i) {
                 ProducerData gen = addGeneratorCheat(new Vector3(0f, 0f, i * 2f), 1, 9999);
                 BeltData belt = addBelt(new Vector3(4f, 0f, i * 2f), new Vector3(12f, 0f, i * 2f));
                 AssemblerData assem = addAssembler(new Vector3(16f, 0, i * 2f));
-                assem.req_itemIds[0] = 1;
-                assem.req_Count[0] = 2;
+                assem.setReqItems(new ushort[] { 1 }, new ushort[] { 2 });
+                //assem.req_itemIds[0] = 1;
+                //assem.req_Count[0] = 2;
                 assem.productItemId = 2;
                 assem.productItemCount = 1;
                 assem.cycleDuration = 2f;
@@ -240,8 +242,7 @@ namespace Simulation_OOP {
 
             }
         }
-        void Update() {
-            float dt = Time.deltaTime;
+        public void PerFrameUpdate(float dt) {
             Profiler.BeginSample("producers");
             for (int i = 0; i < producers.Count; ++i) {
                 producers[i].update(dt);

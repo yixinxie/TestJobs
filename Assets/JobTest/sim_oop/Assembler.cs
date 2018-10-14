@@ -6,9 +6,11 @@ namespace Simulation_OOP {
         public AssemblerData target;
         public int totalProduced;
         public float left;
+        public ushort[] inventory;
         public void Update() {
             left = target.timeLeft;
             totalProduced = target.totalProduced;
+            inventory = target.currentCount;
         }
         public ISimData getTarget() {
             return target;
@@ -19,7 +21,7 @@ namespace Simulation_OOP {
         void Zero(float left);
 
     }
-    public class FloatUpdate {
+    public class FloatUpdate : IUpdate {
         float[] values;
         IFloatUpdate[] subs;
         int count;
@@ -39,7 +41,7 @@ namespace Simulation_OOP {
             subs[idx].NotifyIndexChange(idx);
         }
 
-        public void update(float dt) {
+        public void PerFrameUpdate(float dt) {
             float _count = count;
             for(int i = 0; i < _count; ++i) {
                 values[i] -= dt;
