@@ -8,6 +8,7 @@ namespace Simulation_OOP {
 
         bool attemptToInsert(ushort _itemId, float pos);
         bool attemptToRemove(ushort itemId, float atPos);
-        //void wakeup();
+        void wakeup();
+        void addNotify(ISimData target);
     }
 }

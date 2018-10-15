@@ -1,12 +1,11 @@
 ﻿namespace Simulation_OOP {
-    public class AssemblerData : ISimData {
+    public class AssemblerData : ISimData, IFloatUpdate {
         public ushort[] req_itemIds;
         public ushort[] req_Count;
         public ushort[] currentCount; // frequently changes
         public ushort productItemId;
         public ushort productItemCount; // frequently changes
         public float cycleDuration;
-        public float timeLeft;  // frequently changes
         public int totalProduced;
         public ushort itemCap;
         public AssemblerData(){
@@ -33,12 +32,27 @@
                     break;
                 }
             }
-            checkForStart();
+            wakeup();
             return inserted;
         }
-        bool checkForStart() {
-            if(timeLeft > 0f) {
-                return false;
+
+
+        public bool attemptToRemove(ushort itemId, float atPos) {
+            if(productItemCount > 0 && itemId == productItemId) {
+                productItemCount--;
+                return true;
+            }
+            return false;
+        }
+
+        public void wakeup() {
+            
+            bool added = FloatUpdate.self.getSubByIdx(floatUpdateHandle) == this;
+            if (added) {
+                float timeleft = FloatUpdate.self.getVal(floatUpdateHandle);
+                if (timeleft > 0f) {
+                    return;
+                }
             }
             bool allMet = true;
             for (int i = 0; i < req_itemIds.Length; ++i) {
@@ -51,28 +65,30 @@
                 for (int i = 0; i < req_itemIds.Length; ++i) {
                     currentCount[i] -= req_Count[i];
                 }
-                timeLeft = cycleDuration;
+                FloatUpdate.self.Add(this, cycleDuration);
             }
-            return allMet;
+        }
+        int floatUpdateHandle;
+        public void NotifyIndexChange(int new_idx) {
+            floatUpdateHandle = new_idx;
         }
 
-        public bool attemptToRemove(ushort itemId, float atPos) {
-            if(productItemCount > 0 && itemId == productItemId) {
-                productItemCount--;
-                return true;
-            }
-            return false;
-        }
-        public void update(float dt) {
-            if (timeLeft <= 0f) return;
-            timeLeft -= dt;
-            if (timeLeft <= 0.0f) {
-                productItemCount++;
-                totalProduced++;
-                checkForStart();
-                
+        public void Zero(float left) {
+            productItemCount++;
+            totalProduced++;
 
+            for (int i = 0; i < notifyArray.Length; ++i) {
+                if (notifyArray[i] != null)
+                    notifyArray[i].wakeup();
             }
+
+            wakeup();
+            
+        }
+
+        public ISimData[] notifyArray = new ISimData[4];
+        public void addNotify(ISimData target) {
+            SimDataUtility.appendNotify(notifyArray, target);
         }
     }
 }

@@ -9,6 +9,7 @@ namespace Simulation_OOP {
         public float speed;
         public float itemHalfWidth;
         public const int Length = 10;
+
         public BeltData() {
             positions = new float[Length];
             itemIds = new ushort[Length];
@@ -93,6 +94,19 @@ namespace Simulation_OOP {
                     }
                 }
             }
+            for(int i = 0; i < notifyArray.Length; ++i) {
+                if(notifyArray[i] != null) {
+                    notifyArray[i].wakeup();
+                }
+            }
+        }
+
+        public void wakeup() {
+        }
+
+        public ISimData[] notifyArray = new ISimData[8];
+        public void addNotify(ISimData target) {
+            SimDataUtility.appendNotify(notifyArray, target);
         }
     }
 }

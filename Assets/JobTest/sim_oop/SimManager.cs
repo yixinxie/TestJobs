@@ -239,30 +239,46 @@ namespace Simulation_OOP {
                 ins3.target = stor;
                 ins3.expectedItemId = 2;
 
+                
 
+                SimDataUtility.addPair(gen, ins);
+                SimDataUtility.addPair(belt, ins);
+                SimDataUtility.addPair(belt, ins2);
+                SimDataUtility.addPair(assem, ins2);
+                SimDataUtility.addPair(assem, ins3);
+                SimDataUtility.addPair(stor, ins3);
+
+                gen.wakeup();
+                ins.wakeup();
+                ins2.wakeup();
+                ins3.wakeup();
+                assem.wakeup();
+                belt.wakeup();
             }
         }
         public void PerFrameUpdate(float dt) {
-            Profiler.BeginSample("producers");
-            for (int i = 0; i < producers.Count; ++i) {
-                producers[i].update(dt);
-            }
-            Profiler.EndSample();
-            Profiler.BeginSample("assemblers");
-            for (int i = 0; i < assemblers.Count; ++i) {
-                assemblers[i].update(dt);
-            }
-            Profiler.EndSample();
+            //Profiler.BeginSample("producers");
+            //for (int i = 0; i < producers.Count; ++i) {
+            //    producers[i].update(dt);
+            //}
+            //Profiler.EndSample();
+
+            //Profiler.BeginSample("assemblers");
+            //for (int i = 0; i < assemblers.Count; ++i) {
+            //    assemblers[i].update(dt);
+            //}
+            //Profiler.EndSample();
+
             Profiler.BeginSample("belts");
             for (int i = 0; i < belts.Count; ++i) {
                 belts[i].update(dt);
             }
             Profiler.EndSample();
-            Profiler.BeginSample("inserters");
-            for (int i = 0; i < inserters.Count; ++i) {
-                inserters[i].update(dt);
-            }
-            Profiler.EndSample();
+            //Profiler.BeginSample("inserters");
+            //for (int i = 0; i < inserters.Count; ++i) {
+            //    inserters[i].update(dt);
+            //}
+            //Profiler.EndSample();
         }
     }
 }

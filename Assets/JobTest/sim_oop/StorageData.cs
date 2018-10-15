@@ -17,5 +17,11 @@
             }
             return false;
         }
+
+        public void wakeup() {
+        }
+
+        public void addNotify(ISimData target) {
+        }
     }
 }

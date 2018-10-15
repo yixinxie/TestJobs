@@ -12,7 +12,7 @@ public class SystemUpdate : MonoBehaviour {
     void Awake() {
         self = this;
         systems = new List<IUpdate>(32);
-        systems.Add(new Simulation_OOP.FloatUpdate());
+        systems.Add(new Simulation_OOP.FloatUpdate(4096 * 8));
     }
     private void Start() {
         
