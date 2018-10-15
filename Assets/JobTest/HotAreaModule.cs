@@ -55,20 +55,11 @@ namespace Pathea.HotAreaNs {
             Profiler.BeginSample("HotArea Eval");
             float deltaTime = Time.deltaTime * timeCoefficient;
             for (int i = 0; i < itemCount; i++) {
-#if UNITY_EDITOR || CCC_CMD
-                if (zeroDistance) {
 
-                    itemAgents[i].Distance(Mathf.Epsilon);
+                itemNextCheckTime[i] -= deltaTime;
+                if (itemNextCheckTime[i] <= 0f) {
+                    todoList.Add(i);
                 }
-                else {
-#endif
-                    itemNextCheckTime[i] -= deltaTime;
-                    if (itemNextCheckTime[i] <= 0f) {
-                        todoList.Add(i);
-                    }
-#if UNITY_EDITOR || CCC_CMD
-                }
-#endif
 
             }
             Profiler.EndSample();
