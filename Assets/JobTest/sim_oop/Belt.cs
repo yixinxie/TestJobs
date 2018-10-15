@@ -39,8 +39,6 @@ namespace Simulation_OOP {
             
             float[] positions = target.positions;
             
-            int i = 0;
-            float pos = positions[i];
             //Vector3 from = path[0];
             //Vector3 to = path[path.Count - 1];
             //for (int j = 0; j < count; ++j) {
@@ -48,26 +46,22 @@ namespace Simulation_OOP {
             //    matrices[j] = Matrix4x4.TRS(thisPos, Quaternion.identity, Vector3.one);
             //}
             int j = 0;
-            float left = 0f;
-            float thisDist = Vector3.Distance(path[0], path[1]);
-            for (; i < count; ++i) {
-                pos = positions[i] + left;
-                for(; j < path.Count - 1;) {
-                    //thisDist = Vector3.Distance(path[j], path[j + 1]);
+            float accum = 0f;
+            for (int i = 0; i < count; ++i) {
+                float pos = positions[i] - accum;
+                for(; j < path.Count - 1; j++) {
+                    float thisDist = Vector3.Distance(path[j], path[j + 1]);
                     if (pos <= thisDist) {
                         Vector3 thisPos = Vector3.Lerp(path[j], path[j + 1], pos / thisDist) + selfPos;
                         //Debug.DrawLine(path[j] + Vector3.up * 3f, path[j + 1] + Vector3.up * 3f, Color.red);
                         //Debug.DrawLine(thisPos, thisPos + Vector3.up * 3f, Color.red);
                         matrices[i] = Matrix4x4.TRS(thisPos, Quaternion.identity, Vector3.one);
-                        thisDist -= pos;
-                        //left = 
                         break;
 
                     }
                     else {
+                        accum += thisDist;
                         pos -= thisDist;
-                        j++;
-                        thisDist = Vector3.Distance(path[j], path[j + 1]);
                     }
                 }
             }
@@ -98,11 +92,16 @@ namespace Simulation_OOP {
             }
             return sum;
         }
-        void setPath(Vector3[] positions, int positionsLength, float smoothness, Vector3 basePos, List<Vector3> verts, List<int> indices) {
+
+        void setPathGrid(Vector3[] positions, int positionsLength, float smoothness, Vector3 basePos, List<Vector3> verts, List<int> indices) {
+
+        }
+
+        void setPathBezier(Vector3[] positions, int positionsLength, float smoothness, Vector3 basePos, List<Vector3> verts, List<int> indices) {
             int steps = 10;
             Vector3[] ctrlPos;
             
-            setPathPoints(positions, positionsLength, smoothness, out ctrlPos);
+            genBezierControlPoints(positions, positionsLength, smoothness, out ctrlPos);
             Vector3 lastleft = Vector3.zero;
             Vector3 lastright = Vector3.zero;
             int vert_inc = 0;
@@ -161,7 +160,7 @@ namespace Simulation_OOP {
                 }
             }
         }
-        static void setPathPoints(Vector3[] pts, int positionsLength, float smoothness, out Vector3[] controlPts) {
+        static void genBezierControlPoints(Vector3[] pts, int positionsLength, float smoothness, out Vector3[] controlPts) {
 
             controlPts = new Vector3[(positionsLength - 1) * 2];
             Vector3 curPos = pts[0];
@@ -194,7 +193,7 @@ namespace Simulation_OOP {
             mfilter.mesh.GetVertices(verts);
 
             mfilter.mesh.GetIndices(indices, 0);
-            setPath(pathpoints, pathpoints.Length, 2f, pathpoints[0], verts, indices);
+            setPathBezier(pathpoints, pathpoints.Length, 2f, pathpoints[0], verts, indices);
             transform.position = pathpoints[0];
             mfilter.mesh.Clear(true);
             mfilter.mesh.vertices = verts.ToArray();

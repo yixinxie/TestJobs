@@ -11,9 +11,9 @@ namespace Simulation_OOP {
         private void Awake() {
             
         }
-        public void initialize(ResourceNode node) {
-            target.itemId = node.itemType;
-            target.remaining = node.remaining;
+        public void initialize(ushort itemType, int remaining) {
+            target.itemId = itemType;
+            target.remaining = remaining;
         }
         private void Update() {
             timeLeft = target.timeLeft;
