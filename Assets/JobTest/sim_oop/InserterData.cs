@@ -69,6 +69,7 @@ namespace Simulation_OOP {
         public float sourcePos;
         public float targetPos;
         public ISimData source, target;
+        public int sourceCount;
         public byte phase; // 0: moving back to source, 1: moving towards target.
         public const float cycleDuration = 0.5f;
         
@@ -87,7 +88,6 @@ namespace Simulation_OOP {
                 if (source.attemptToRemove(expectedItemId, sourcePos)) {
                     FloatUpdate.self.Add(this, cycleDuration);
                     phase = 1;
-                    //timeLeft = cycleDuration;
                     source.wakeup();
                 }
             }
@@ -99,7 +99,13 @@ namespace Simulation_OOP {
                 }
             }
         }
-
+        public float getTimeLeft() {
+            if (FloatUpdate.self.getSubByIdx(floatUpdateHandle) == this) {
+                float timeleft = FloatUpdate.self.getVal(floatUpdateHandle);
+                return timeleft;
+            }
+            return -1f;
+        }
         public bool attemptToInsert(ushort _itemId, float pos) {
             return false;
         }
@@ -117,22 +123,28 @@ namespace Simulation_OOP {
                 // just reached the source.
                 if (source.attemptToRemove(expectedItemId, sourcePos)) {
                     phase = 1;
-                    FloatUpdate.self.Add(this, cycleDuration);
+                    FloatUpdate.self.SetVal(floatUpdateHandle, cycleDuration);
                     for (int i = 0; i < notifyArray.Length; ++i) {
                         if (notifyArray[i] != null)
                             notifyArray[i].wakeup();
                     }
+                }
+                else {
+                    FloatUpdate.self.RemoveAt(floatUpdateHandle);
                 }
             }
             else if (phase == 1 && target != null) {
                 // just reached the target/destination
                 if (target.attemptToInsert(expectedItemId, targetPos)) {
                     phase = 0;
-                    FloatUpdate.self.Add(this, cycleDuration);
+                    FloatUpdate.self.SetVal(floatUpdateHandle, cycleDuration);
                     for (int i = 0; i < notifyArray.Length; ++i) {
                         if (notifyArray[i] != null)
                             notifyArray[i].wakeup();
                     }
+                }
+                else {
+                    FloatUpdate.self.RemoveAt(floatUpdateHandle);
                 }
             }
         }

@@ -218,7 +218,7 @@ namespace Simulation_OOP {
                 //assem.req_Count[0] = 2;
                 assem.productItemId = 2;
                 assem.productItemCount = 1;
-                assem.cycleDuration = 2f;
+                assem.cycleDuration = 30f;
                 StorageData stor = addStorage(new Vector3(20f, 0, i * 2f));
 
                 InserterData ins = addInserter(new Vector3(2f, 0f, i * 2f));
@@ -278,7 +278,7 @@ namespace Simulation_OOP {
             //for (int i = 0; i < inserters.Count; ++i) {
             //    inserters[i].update(dt);
             //}
-            //Profiler.EndSample();
+            //Profiler.EndSample();259LUXU-994  300NTK-038
         }
     }
 }

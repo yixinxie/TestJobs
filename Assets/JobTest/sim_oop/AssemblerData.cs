@@ -13,6 +13,13 @@
             req_Count = new ushort[3];
             currentCount = new ushort[3];
         }
+        public float getTimeLeft() {
+            if (FloatUpdate.self.getSubByIdx(floatUpdateHandle) == this) {
+                float timeleft = FloatUpdate.self.getVal(floatUpdateHandle);
+                return timeleft;
+            }
+            return -1f;
+        }
         public void setReqItems(ushort[] ids, ushort[] counts) {
             for(int i = 0; i < req_itemIds.Length; ++i) {
                 if (i >= ids.Length) break;
@@ -82,8 +89,23 @@
                     notifyArray[i].wakeup();
             }
 
-            wakeup();
-            
+            bool allMet = true;
+            for (int i = 0; i < req_itemIds.Length; ++i) {
+                if (currentCount[i] < req_Count[i] && req_Count[i] > 0) {
+                    allMet = false;
+                    break;
+                }
+            }
+            if (allMet) {
+                for (int i = 0; i < req_itemIds.Length; ++i) {
+                    currentCount[i] -= req_Count[i];
+                }
+                FloatUpdate.self.SetVal(floatUpdateHandle, cycleDuration);
+            }
+            else {
+                FloatUpdate.self.RemoveAt(floatUpdateHandle);
+            }
+
         }
 
         public ISimData[] notifyArray = new ISimData[4];

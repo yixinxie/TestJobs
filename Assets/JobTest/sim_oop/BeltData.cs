@@ -56,9 +56,9 @@ namespace Simulation_OOP {
             }
             return ret;
         }
-
+        const float PickupDist = 0.2f;
         short queryItemAtPos(float pos, ushort itemId) {
-            const float PickupDist = 0.2f;
+            
             for (short i = 0; i < count; ++i) {
                 if (Mathf.Abs(pos - positions[i]) < PickupDist && itemIds[i] == itemId) {
                     //Debug.Log("got " + i);
@@ -81,9 +81,10 @@ namespace Simulation_OOP {
             return ret;
         }
         public void update(float dt) {
-            for (int i = count - 1; i >= 0; --i) {
+            int lastIdx = count - 1;
+            for (int i = lastIdx; i >= 0; --i) {
                 positions[i] += dt * speed;
-                if (i == count - 1) {
+                if (i == lastIdx) {
                     if (positions[i] > tubeLength) {
                         positions[i] = tubeLength;
                     }
@@ -94,10 +95,11 @@ namespace Simulation_OOP {
                     }
                 }
             }
-            for(int i = 0; i < notifyArray.Length; ++i) {
-                if(notifyArray[i] != null) {
-                    notifyArray[i].wakeup();
-                }
+            if (count > 0 && positions[0] > itemHalfWidth) {
+                notifyArray[0].wakeup();
+            }
+            if(count > 0 && positions[lastIdx] > tubeLength - PickupDist) {
+                notifyArray[1].wakeup();
             }
         }
 

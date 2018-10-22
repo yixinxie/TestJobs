@@ -1,6 +1,5 @@
 ﻿namespace Simulation_OOP {
     public class ProducerData : ISimData, IFloatUpdate {
-        public float timeLeft;
         public ushort itemId;
         public int count; // produced
         public int remaining;
@@ -9,7 +8,13 @@
         public ProducerData() {
             cycleDuration = 2f;
         }
-
+        public float getTimeLeft() {
+            if (FloatUpdate.self.getSubByIdx(floatUpdateHandle) == this) {
+                float timeleft = FloatUpdate.self.getVal(floatUpdateHandle);
+                return timeleft;
+            }
+            return -1f;
+        }
         public bool attemptToInsert(ushort _itemId, float pos) {
             return false;
         }
@@ -25,7 +30,7 @@
         public void NotifyIndexChange(int new_idx) {
             floatUpdateHandle = new_idx;
         }
-
+        const int tempStorageCount = 3;
         public void wakeup() {
             bool added = FloatUpdate.self.getSubByIdx(floatUpdateHandle) == this;
             if (added) {
@@ -35,8 +40,14 @@
                 }
             }
 
-            if (remaining > 0) {
-                FloatUpdate.self.Add(this, cycleDuration);
+            if (remaining > 0 && count < tempStorageCount) {
+                if (added) {
+
+                    FloatUpdate.self.SetVal(floatUpdateHandle, cycleDuration);
+                }
+                else {
+                    FloatUpdate.self.Add(this, cycleDuration);
+                }
             }
         }
 
@@ -47,7 +58,13 @@
                 if (notifyArray[i] != null)
                     notifyArray[i].wakeup();
             }
-            wakeup();
+            //wakeup();
+            if (count < tempStorageCount && remaining > 0) {
+                FloatUpdate.self.SetVal(floatUpdateHandle, cycleDuration);
+            }
+            else {
+                FloatUpdate.self.RemoveAt(floatUpdateHandle);
+            }
         }
 
         public ISimData[] notifyArray = new ISimData[2];

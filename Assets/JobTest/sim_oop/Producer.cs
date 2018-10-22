@@ -16,7 +16,7 @@ namespace Simulation_OOP {
             target.remaining = remaining;
         }
         private void Update() {
-            timeLeft = target.timeLeft;
+            timeLeft = target.getTimeLeft();
             current = target.count;
         }
         public ISimData getTarget() {

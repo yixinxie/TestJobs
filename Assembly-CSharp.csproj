@@ -79,6 +79,7 @@
     <Compile Include="Assets\JobTest\sim_oop\ResourceNode.cs" />
     <Compile Include="Assets\JobTest\sim_oop\SimManager.cs" />
     <Compile Include="Assets\JobTest\sim_oop\SimulatorData.cs" />
+    <Compile Include="Assets\JobTest\sim_oop\SplitterData.cs" />
     <Compile Include="Assets\JobTest\sim_oop\Storage.cs" />
     <Compile Include="Assets\JobTest\sim_oop\StorageData.cs" />
     <Compile Include="Assets\JobTest\sim_oop\StructureManager.cs" />

@@ -9,6 +9,7 @@ namespace Simulation_OOP {
         public float left;
         public ushort[] inventory;
         public void Update() {
+            left = target.getTimeLeft();
             totalProduced = target.totalProduced;
             inventory = target.currentCount;
         }
