@@ -30,7 +30,7 @@
             itemCap *= 2;
         }
 
-        public bool attemptToInsert(ushort _itemId, float pos) {
+        public bool attemptToInsert(ushort _itemId) {
             bool inserted = false;
             for(int i = 0; i < req_itemIds.Length; ++i) {
                 if(req_itemIds[i] == _itemId && currentCount[i] < itemCap) {
@@ -44,7 +44,7 @@
         }
 
 
-        public bool attemptToRemove(ushort itemId, float atPos) {
+        public bool attemptToRemove(ushort itemId) {
             if(productItemCount > 0 && itemId == productItemId) {
                 productItemCount--;
                 return true;

@@ -34,14 +34,14 @@ namespace Simulation_OOP {
             if (timeLeft <= 0.0f) {
                 if (phase == 0 && source != null) {
                     // just reached the source.
-                    if (source.attemptToRemove(expectedItemId, sourcePos)) {
+                    if (source.attemptToRemove(expectedItemId)) {
                         phase = 1;
                         timeLeft = cycleDuration;
                     }
                 }
                 else if (phase == 1 && target != null) {
                     // just reached the target/destination
-                    if (target.attemptToInsert(expectedItemId, targetPos)) {
+                    if (target.attemptToInsert(expectedItemId)) {
                         phase = 0;
                         timeLeft = cycleDuration;
                     }
@@ -49,11 +49,11 @@ namespace Simulation_OOP {
             }
         }
 
-        public bool attemptToInsert(ushort _itemId, float pos) {
+        public bool attemptToInsert(ushort _itemId) {
             return false;
         }
 
-        public bool attemptToRemove(ushort itemId, float atPos) {
+        public bool attemptToRemove(ushort itemId) {
             return false;
         }
         public void wakeup() {
@@ -85,7 +85,7 @@ namespace Simulation_OOP {
 
             if (phase == 0 && source != null) {
                 // just reached the source.
-                if (source.attemptToRemove(expectedItemId, sourcePos)) {
+                if (source.attemptToRemove(expectedItemId)) {
                     FloatUpdate.self.Add(this, cycleDuration);
                     phase = 1;
                     source.wakeup();
@@ -93,7 +93,7 @@ namespace Simulation_OOP {
             }
             else if (phase == 1 && target != null) {
                 // just reached the target/destination
-                if (target.attemptToInsert(expectedItemId, targetPos)) {
+                if (target.attemptToInsert(expectedItemId)) {
                     phase = 0;
                     target.wakeup();
                 }
@@ -106,11 +106,11 @@ namespace Simulation_OOP {
             }
             return -1f;
         }
-        public bool attemptToInsert(ushort _itemId, float pos) {
+        public bool attemptToInsert(ushort _itemId) {
             return false;
         }
 
-        public bool attemptToRemove(ushort itemId, float atPos) {
+        public bool attemptToRemove(ushort itemId) {
             return false;
         }
 
@@ -121,7 +121,7 @@ namespace Simulation_OOP {
         public void Zero(float left) {
             if (phase == 0 && source != null) {
                 // just reached the source.
-                if (source.attemptToRemove(expectedItemId, sourcePos)) {
+                if (source.attemptToRemove(expectedItemId)) {
                     phase = 1;
                     FloatUpdate.self.SetVal(floatUpdateHandle, cycleDuration);
                     for (int i = 0; i < notifyArray.Length; ++i) {
@@ -135,7 +135,7 @@ namespace Simulation_OOP {
             }
             else if (phase == 1 && target != null) {
                 // just reached the target/destination
-                if (target.attemptToInsert(expectedItemId, targetPos)) {
+                if (target.attemptToInsert(expectedItemId)) {
                     phase = 0;
                     FloatUpdate.self.SetVal(floatUpdateHandle, cycleDuration);
                     for (int i = 0; i < notifyArray.Length; ++i) {

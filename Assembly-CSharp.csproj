@@ -74,6 +74,7 @@
     <Compile Include="Assets\JobTest\sim_oop\FloatUpdate.cs" />
     <Compile Include="Assets\JobTest\sim_oop\Inserter.cs" />
     <Compile Include="Assets\JobTest\sim_oop\InserterData.cs" />
+    <Compile Include="Assets\JobTest\sim_oop\MergerData.cs" />
     <Compile Include="Assets\JobTest\sim_oop\Producer.cs" />
     <Compile Include="Assets\JobTest\sim_oop\ProducerData.cs" />
     <Compile Include="Assets\JobTest\sim_oop\ResourceNode.cs" />
@@ -109,6 +110,7 @@
     <Compile Include="Assets\OcclusionCulling\TestOC\LODEval.cs" />
     <Compile Include="Assets\OcclusionCulling\TestOC\LODGroupTest.cs" />
     <Compile Include="Assets\OcclusionCulling\TestOC\LODRendererInfo.cs" />
+    <Compile Include="Assets\OcclusionCulling\TestUOC.cs" />
     <Compile Include="Assets\RenderTest\CamRail.cs" />
     <Compile Include="Assets\RenderTest\ChangeMat.cs" />
     <Compile Include="Assets\RenderTest\MeshStats.cs" />

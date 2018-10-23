@@ -15,11 +15,11 @@
             }
             return -1f;
         }
-        public bool attemptToInsert(ushort _itemId, float pos) {
+        public bool attemptToInsert(ushort _itemId) {
             return false;
         }
 
-        public bool attemptToRemove(ushort itemId, float atPos) {
+        public bool attemptToRemove(ushort itemId) {
             if (count > 0) {
                 count--;
                 return true;

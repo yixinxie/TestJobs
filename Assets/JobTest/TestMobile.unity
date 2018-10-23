@@ -1040,7 +1040,7 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
-  orthographic: 1
+  orthographic: 0
   orthographic size: 9.7
   m_Depth: -1
   m_CullingMask:
@@ -1064,7 +1064,7 @@ Transform:
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 358837802}
   m_LocalRotation: {x: 0.19996412, y: 0.3736123, z: -0.08282785, w: 0.90198}
-  m_LocalPosition: {x: -6.49, y: 16.27, z: -5.43}
+  m_LocalPosition: {x: -13.6, y: 15.27, z: -12.54}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -3731,7 +3731,7 @@ MonoBehaviour:
   beltPrefab: {fileID: 1648674992910034, guid: 95c5eef0d9e355c42b6f2dbd753af307, type: 2}
   inserterPrefab: {fileID: 1550423774031376, guid: d927d8b92013542479c324fc01646939,
     type: 2}
-  line_count: 4096
+  line_count: 1
 --- !u!4 &1430167529
 Transform:
   m_ObjectHideFlags: 0
@@ -3772,6 +3772,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 072967fa96c1d2e428e7b33ccea09e20, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dbg_FloatCount: 0
 --- !u!1 &1437806465
 GameObject:
   m_ObjectHideFlags: 0

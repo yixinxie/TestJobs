@@ -2,26 +2,43 @@
 namespace Simulation_OOP {
     public class SplitterData : ISimData {
         byte splitPolicy;
-        ISimData source, output0, output1;
+        int alternate;
+        ushort expectedItem;
+        float sourcePos;
+        BeltData currentOutput;
+        BeltData source;
+        BeltData[] outputs;
+
         public SplitterData() {
             splitPolicy = 0;
+            outputs = new BeltData[2];
         }
 
         
-        public bool attemptToInsert(ushort _itemId, float pos) {
-            
+        public bool attemptToInsert(ushort _itemId) {
             return false;
         }
-        const float PickupDist = 0.2f;
-        public bool attemptToRemove(ushort itemId, float atPos) {
-            bool ret = false;
-            return ret;
-        }
-        public void update(float dt) {
+        
+        public bool attemptToRemove(ushort itemId) {
+            return false;
         }
 
         public void wakeup() {
+            if (source != null && currentOutput != null) {
+                if (source.canRemove() && currentOutput.canInsert()) {
+                    source.attemptToRemove(expectedItem);
+                    currentOutput.attemptToInsert(expectedItem);
+
+                    alternate++;
+                    alternate %= outputs.Length;
+                    currentOutput = outputs[alternate];
+
+                }
+            }
         }
+        //public void update(float dt) {
+            
+        //}
 
         public ISimData[] notifyArray = new ISimData[8];
         public void addNotify(ISimData target) {
