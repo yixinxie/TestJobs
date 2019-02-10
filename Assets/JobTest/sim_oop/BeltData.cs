@@ -3,7 +3,7 @@ namespace Simulation_OOP {
     public class BeltData : ISimData {
         ushort[] itemIds;
         public float[] positions;
-
+        float[] notifyPositions = new float[8];
         public int count;
         public float tubeLength;
         public float speed;
@@ -17,6 +17,9 @@ namespace Simulation_OOP {
             tubeLength = 10f;
             speed = 1f;
             itemHalfWidth = 0.5f;
+            for(int i = 0; i < notifyPositions.Length; ++i) {
+                notifyPositions[i] = -1f;
+            }
         }
 
         short canInsert(float pos) {
@@ -37,6 +40,7 @@ namespace Simulation_OOP {
             }
             return -1;
         }
+
         public bool attemptToInsert(ushort _itemId, float pos) {
             bool ret = false;
             if (count > Length) return ret;
@@ -67,6 +71,7 @@ namespace Simulation_OOP {
             }
             return -1;
         }
+
         public bool attemptToRemove(ushort itemId, float atPos) {
             bool ret = false;
             short atIdx = queryItemAtPos(atPos, itemId);
@@ -80,7 +85,9 @@ namespace Simulation_OOP {
             }
             return ret;
         }
+
         public void update(float dt) {
+            int notifylength = notifyPositions.Length;
             for (int i = count - 1; i >= 0; --i) {
                 positions[i] += dt * speed;
                 if (i == count - 1) {
@@ -93,20 +100,43 @@ namespace Simulation_OOP {
                         positions[i] = positions[i + 1] - itemHalfWidth * 2f;
                     }
                 }
-            }
-            for(int i = 0; i < notifyArray.Length; ++i) {
-                if(notifyArray[i] != null) {
-                    notifyArray[i].wakeup();
+                for(int j = 0; j < notifylength; ++j) {
+                    if (notifyPositions[j] < 0f) break;
+                    float distToNotify = Mathf.Abs(notifyPositions[j] - positions[i]);
+                    if(distToNotify < 0.2f) {
+                        notifyArray[j].wakeup();
+                    }
                 }
             }
+            //for(int i = 0; i < notifyArray.Length; ++i) {
+            //    if(notifyArray[i] != null) {
+            //        notifyArray[i].wakeup();
+            //    }
+            //}
         }
 
         public void wakeup() {
         }
 
         public ISimData[] notifyArray = new ISimData[8];
-        public void addNotify(ISimData target) {
-            SimDataUtility.appendNotify(notifyArray, target);
+        
+        public void addNotify(ISimData target, float relativePos) {
+            //SimDataUtility.appendNotify(notifyArray, target);
+            bool added = false;
+            for (int i = 0; i < notifyArray.Length; ++i) {
+                if (notifyArray[i] == null) {
+                    notifyArray[i] = target;
+                    notifyPositions[i] = relativePos;
+                    added = true;
+                    break;
+                }
+            }
+            if(added == false)
+                Debug.Log("not enough space for notify.");
+        }
+
+        public void setTrafficState(byte newState) {
+
         }
     }
 }

@@ -242,8 +242,8 @@ namespace Simulation_OOP {
                 
 
                 SimDataUtility.addPair(gen, ins);
-                SimDataUtility.addPair(belt, ins);
-                SimDataUtility.addPair(belt, ins2);
+                SimDataUtility.addInserterToBelt(belt, ins, 0f);
+                SimDataUtility.addInserterToBelt(belt, ins2, 8f);
                 SimDataUtility.addPair(assem, ins2);
                 SimDataUtility.addPair(assem, ins3);
                 SimDataUtility.addPair(stor, ins3);

@@ -20,8 +20,11 @@
 
         public void wakeup() {
         }
+        public void setTrafficState(byte newState) {
 
-        public void addNotify(ISimData target) {
+        }
+
+        public void addNotify(ISimData target, float relativePos) {
         }
     }
 }

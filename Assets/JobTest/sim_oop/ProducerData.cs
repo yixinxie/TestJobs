@@ -6,10 +6,15 @@
         public int remaining;
         public float cycleDuration;
         int floatUpdateHandle;
+        byte trafficState; 
+        // 0: none; 1: tail blocked
+        // 
         public ProducerData() {
             cycleDuration = 2f;
         }
-
+        public void setTrafficState(byte newState) {
+            trafficState = newState;
+        }
         public bool attemptToInsert(ushort _itemId, float pos) {
             return false;
         }
@@ -51,7 +56,7 @@
         }
 
         public ISimData[] notifyArray = new ISimData[2];
-        public void addNotify(ISimData target) {
+        public void addNotify(ISimData target, float relativePos) {
             SimDataUtility.appendNotify(notifyArray, target);
         }
     }

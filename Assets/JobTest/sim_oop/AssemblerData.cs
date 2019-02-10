@@ -87,8 +87,12 @@
         }
 
         public ISimData[] notifyArray = new ISimData[4];
-        public void addNotify(ISimData target) {
+        public void addNotify(ISimData target, float relativePos) {
             SimDataUtility.appendNotify(notifyArray, target);
+        }
+
+        public void setTrafficState(byte newState) {
+
         }
     }
 }

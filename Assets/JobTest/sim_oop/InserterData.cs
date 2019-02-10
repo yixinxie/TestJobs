@@ -16,9 +16,15 @@ namespace Simulation_OOP {
             Debug.Log("not enough space for notify.");
         }
 
+
         public static void addPair(ISimData v0, ISimData v1) {
-            v0.addNotify(v1);
-            v1.addNotify(v0);
+            v0.addNotify(v1, 0f);
+            v1.addNotify(v0, 0f);
+        }
+        public static void addInserterToBelt(ISimData belt, ISimData inserter, float relativePos) {
+
+            belt.addNotify(inserter, relativePos);
+            inserter.addNotify(belt, 0f);
         }
     }
     public class InserterData_OOP : ISimData {
@@ -60,7 +66,10 @@ namespace Simulation_OOP {
 
         }
 
-        public void addNotify(ISimData target) {
+        public void addNotify(ISimData target, float relativePos) {
+        }
+        public void setTrafficState(byte newState) {
+
         }
     }
 
@@ -137,8 +146,12 @@ namespace Simulation_OOP {
             }
         }
         public ISimData[] notifyArray = new ISimData[2];
-        public void addNotify(ISimData target) {
+        public void addNotify(ISimData target, float relativePos) {
             SimDataUtility.appendNotify(notifyArray, target);
+        }
+
+        public void setTrafficState(byte newState) {
+
         }
     }
 }
