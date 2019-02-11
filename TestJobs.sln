@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestJobs", "Assembly-CSharp.csproj", "{B349327B-F51C-19F5-4C88-CD81A24953B9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{B349327B-F51C-19F5-4C88-CD81A24953B9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestJobs", "Assembly-CSharp-Editor.csproj", "{E5B5E02A-FBEE-8BA3-813C-E4912A279870}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{E5B5E02A-FBEE-8BA3-813C-E4912A279870}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

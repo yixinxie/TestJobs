@@ -40,14 +40,14 @@ namespace Simulation_OOP {
             if (timeLeft <= 0.0f) {
                 if (phase == 0 && source != null) {
                     // just reached the source.
-                    if (source.attemptToRemove(expectedItemId, sourcePos)) {
+                    if (source.attemptToRemove(expectedItemId)) {
                         phase = 1;
                         timeLeft = cycleDuration;
                     }
                 }
                 else if (phase == 1 && target != null) {
                     // just reached the target/destination
-                    if (target.attemptToInsert(expectedItemId, targetPos)) {
+                    if (target.attemptToInsert(expectedItemId)) {
                         phase = 0;
                         timeLeft = cycleDuration;
                     }
@@ -55,11 +55,11 @@ namespace Simulation_OOP {
             }
         }
 
-        public bool attemptToInsert(ushort _itemId, float pos) {
+        public bool attemptToInsert(ushort _itemId) {
             return false;
         }
 
-        public bool attemptToRemove(ushort itemId, float atPos) {
+        public bool attemptToRemove(ushort itemId) {
             return false;
         }
         public void wakeup() {
@@ -78,6 +78,7 @@ namespace Simulation_OOP {
         public float sourcePos;
         public float targetPos;
         public ISimData source, target;
+        public int sourceCount;
         public byte phase; // 0: moving back to source, 1: moving towards target.
         public const float cycleDuration = 0.5f;
         
@@ -93,27 +94,32 @@ namespace Simulation_OOP {
 
             if (phase == 0 && source != null) {
                 // just reached the source.
-                if (source.attemptToRemove(expectedItemId, sourcePos)) {
+                if (source.attemptToRemove(expectedItemId)) {
                     FloatUpdate.self.Add(this, cycleDuration);
                     phase = 1;
-                    //timeLeft = cycleDuration;
                     source.wakeup();
                 }
             }
             else if (phase == 1 && target != null) {
                 // just reached the target/destination
-                if (target.attemptToInsert(expectedItemId, targetPos)) {
+                if (target.attemptToInsert(expectedItemId)) {
                     phase = 0;
                     target.wakeup();
                 }
             }
         }
-
-        public bool attemptToInsert(ushort _itemId, float pos) {
+        public float getTimeLeft() {
+            if (FloatUpdate.self.getSubByIdx(floatUpdateHandle) == this) {
+                float timeleft = FloatUpdate.self.getVal(floatUpdateHandle);
+                return timeleft;
+            }
+            return -1f;
+        }
+        public bool attemptToInsert(ushort _itemId) {
             return false;
         }
 
-        public bool attemptToRemove(ushort itemId, float atPos) {
+        public bool attemptToRemove(ushort itemId) {
             return false;
         }
 
@@ -124,24 +130,30 @@ namespace Simulation_OOP {
         public void Zero(float left) {
             if (phase == 0 && source != null) {
                 // just reached the source.
-                if (source.attemptToRemove(expectedItemId, sourcePos)) {
+                if (source.attemptToRemove(expectedItemId)) {
                     phase = 1;
-                    FloatUpdate.self.Add(this, cycleDuration);
+                    FloatUpdate.self.SetVal(floatUpdateHandle, cycleDuration);
                     for (int i = 0; i < notifyArray.Length; ++i) {
                         if (notifyArray[i] != null)
                             notifyArray[i].wakeup();
                     }
                 }
+                else {
+                    FloatUpdate.self.RemoveAt(floatUpdateHandle);
+                }
             }
             else if (phase == 1 && target != null) {
                 // just reached the target/destination
-                if (target.attemptToInsert(expectedItemId, targetPos)) {
+                if (target.attemptToInsert(expectedItemId)) {
                     phase = 0;
-                    FloatUpdate.self.Add(this, cycleDuration);
+                    FloatUpdate.self.SetVal(floatUpdateHandle, cycleDuration);
                     for (int i = 0; i < notifyArray.Length; ++i) {
                         if (notifyArray[i] != null)
                             notifyArray[i].wakeup();
                     }
+                }
+                else {
+                    FloatUpdate.self.RemoveAt(floatUpdateHandle);
                 }
             }
         }

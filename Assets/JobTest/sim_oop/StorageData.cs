@@ -5,12 +5,12 @@
         public StorageData() {
             stacks = new short[MaxItemTypeCount];
         }
-        public bool attemptToInsert(ushort itemId, float pos) {
+        public bool attemptToInsert(ushort itemId) {
             stacks[itemId]++;
             return true;
         }
 
-        public bool attemptToRemove(ushort itemId, float atPos) {
+        public bool attemptToRemove(ushort itemId) {
             if (stacks[itemId] > 0) {
                 stacks[itemId]--;
                 return true;

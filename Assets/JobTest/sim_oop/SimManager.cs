@@ -197,12 +197,12 @@ namespace Simulation_OOP {
                 InserterData ins = addInserter(new Vector3(2f, 0f, i * 2f));
                 ins.source = gen;
                 ins.target = belt;
-                ins.targetPos = 0f;
+                //ins.targetPos = 0f;
                 ins.expectedItemId = 1;
 
                 InserterData ins2 = addInserter(new Vector3(13f, 0, i * 2f));
                 ins2.source = belt;
-                ins2.sourcePos = 8f;
+                //ins2.sourcePos = 8f;
                 ins2.target = stor;
                 ins2.expectedItemId = 1;
             }
@@ -218,18 +218,18 @@ namespace Simulation_OOP {
                 //assem.req_Count[0] = 2;
                 assem.productItemId = 2;
                 assem.productItemCount = 1;
-                assem.cycleDuration = 2f;
+                assem.cycleDuration = 3f;
                 StorageData stor = addStorage(new Vector3(20f, 0, i * 2f));
 
                 InserterData ins = addInserter(new Vector3(2f, 0f, i * 2f));
                 ins.source = gen;
                 ins.target = belt;
-                ins.targetPos = 0f;
+                //ins.targetPos = 0f;
                 ins.expectedItemId = 1;
 
                 InserterData ins2 = addInserter(new Vector3(14f, 0, i * 2f));
                 ins2.source = belt;
-                ins2.sourcePos = 8f;
+                //ins2.sourcePos = 8f;
                 ins2.target = assem;
                 ins2.expectedItemId = 1;
 
@@ -278,7 +278,7 @@ namespace Simulation_OOP {
             //for (int i = 0; i < inserters.Count; ++i) {
             //    inserters[i].update(dt);
             //}
-            //Profiler.EndSample();
+            //Profiler.EndSample();259LUXU-994  300NTK-038
         }
     }
 }

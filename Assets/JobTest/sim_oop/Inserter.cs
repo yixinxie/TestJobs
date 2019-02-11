@@ -10,7 +10,7 @@ namespace Simulation_OOP {
         public float phaseTime;
         public int phase;
         private void Update() {
-            //phaseTime = target.timeLeft;
+            phaseTime = target.getTimeLeft();
             phase = target.phase;
         }
         public ISimData getTarget() {
